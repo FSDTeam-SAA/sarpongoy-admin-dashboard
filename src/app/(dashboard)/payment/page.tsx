@@ -1,0 +1,209 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { toast } from 'sonner'
+import { TableSkeleton } from '../_components/SkeletonBlocks'
+
+type SessionUser = {
+  accessToken?: string | null
+}
+
+type PaymentItem = {
+  _id: string
+  schoolName?: string
+  email?: string
+  amount?: number
+  status?: 'pending' | 'completed' | 'failed' | 'refunded'
+}
+
+type PaginationMeta = {
+  page: number
+  limit: number
+  total: number
+}
+
+const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL
+
+export default function PaymentPage() {
+  const { data: session } = useSession()
+  const user = session?.user as SessionUser | undefined
+  const accessToken = user?.accessToken
+
+  const [payments, setPayments] = useState<PaymentItem[]>([])
+  const [meta, setMeta] = useState<PaginationMeta>({ page: 1, limit: 10, total: 0 })
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!accessToken) return
+
+    const controller = new AbortController()
+    const timeout = window.setTimeout(async () => {
+      try {
+        setLoading(true)
+        const params = new URLSearchParams({
+          page: String(meta.page),
+          limit: String(meta.limit),
+        })
+
+        if (search.trim()) {
+          params.set('searchTerm', search.trim())
+        }
+
+        const response = await fetch(`${baseUrl}/payment?${params.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          signal: controller.signal,
+        })
+
+        const result = (await response.json()) as {
+          data?: PaymentItem[]
+          meta?: PaginationMeta
+          message?: string
+        }
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Failed to load payments')
+        }
+
+        setPayments(result.data || [])
+        setMeta(result.meta || { page: 1, limit: 10, total: 0 })
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          toast.error(error instanceof Error ? error.message : 'Failed to load payments')
+        }
+      } finally {
+        setLoading(false)
+      }
+    }, 300)
+
+    return () => {
+      controller.abort()
+      window.clearTimeout(timeout)
+    }
+  }, [accessToken, meta.page, meta.limit, search])
+
+  const totalPages = Math.max(1, Math.ceil(meta.total / meta.limit))
+
+  const renderStatus = (status?: string) => {
+    if (status === 'completed') {
+      return 'bg-[#D9FBE2] text-[#2F9E44]'
+    }
+
+    if (status === 'pending') {
+      return 'bg-[#FFF1BF] text-[#E67700]'
+    }
+
+    return 'bg-[#FDE2E2] text-[#D92D20]'
+  }
+
+  return (
+    <div className="min-h-[calc(100vh-6rem)] bg-[#ECF7FD] p-8">
+      <section className="rounded-lg bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E5E7EB] px-5 py-4">
+          <h1 className="text-[18px] font-semibold text-[#0A0A0B]">Payment</h1>
+
+          <div className="flex h-11 w-full min-w-[260px] max-w-[320px] items-center rounded-full border border-[#D1D5DB] px-4 text-[#6B7280] sm:w-[320px]">
+            <input
+              type="text"
+              placeholder="Search Payment"
+              value={search}
+              onChange={event => {
+                setMeta(current => ({ ...current, page: 1 }))
+                setSearch(event.target.value)
+              }}
+              className="w-full bg-transparent text-[14px] outline-none placeholder:text-[#C0C4CC]"
+            />
+            <Search className="size-4 shrink-0" />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead className="bg-[#F9FAFB]">
+              <tr className="border-b border-[#E5E7EB]">
+                <th className="px-4 py-4 text-center text-[14px] font-bold text-[#6B7280]">School Name</th>
+                <th className="px-4 py-4 text-center text-[14px] font-bold text-[#6B7280]">Email</th>
+                <th className="px-4 py-4 text-center text-[14px] font-bold text-[#6B7280]">Total Students</th>
+                <th className="px-4 py-4 text-center text-[14px] font-bold text-[#6B7280]">Total Amount</th>
+                <th className="px-4 py-4 text-center text-[14px] font-bold text-[#6B7280]">Status</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="p-0">
+                    <TableSkeleton columns={5} rows={6} />
+                  </td>
+                </tr>
+              ) : payments.length ? (
+                payments.map(payment => (
+                  <tr key={payment._id} className="border-b border-[#E5E7EB]">
+                    <td className="px-4 py-5 text-center text-[14px] text-[#0A0A0B]">{payment.schoolName || 'N/A'}</td>
+                    <td className="px-4 py-5 text-center text-[14px] text-[#0A0A0B]">{payment.email || 'N/A'}</td>
+                    <td className="px-4 py-5 text-center text-[14px] text-[#0A0A0B]">N/A</td>
+                    <td className="px-4 py-5 text-center text-[14px] text-[#0A0A0B]">
+                      ${Number(payment.amount || 0).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-5 text-center">
+                      <span
+                        className={`inline-flex rounded-full px-4 py-1 text-[12px] font-medium capitalize ${renderStatus(
+                          payment.status,
+                        )}`}
+                      >
+                        {payment.status || 'unknown'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-[16px] text-[#6B7280]">
+                    No payment records found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+          <p className="text-[14px] font-normal text-[#6B7280]">
+            Showing {payments.length ? (meta.page - 1) * meta.limit + 1 : 0} to {Math.min(meta.page * meta.limit, meta.total)} of{' '}
+            {meta.total} results
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMeta(current => ({ ...current, page: Math.max(1, current.page - 1) }))}
+              disabled={meta.page === 1}
+              className="flex h-8 w-8 items-center justify-center rounded border border-[#94A3B8] text-[#64748B] disabled:opacity-40"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+
+            <button
+              type="button"
+              className="flex h-8 min-w-8 items-center justify-center rounded border border-[#0B2E59] bg-[#0B2E59] px-2 text-[14px] text-white"
+            >
+              {meta.page}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMeta(current => ({ ...current, page: Math.min(totalPages, current.page + 1) }))}
+              disabled={meta.page >= totalPages}
+              className="flex h-8 w-8 items-center justify-center rounded border border-[#94A3B8] text-[#334155] disabled:opacity-40"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
