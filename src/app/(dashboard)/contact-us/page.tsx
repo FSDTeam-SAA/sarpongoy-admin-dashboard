@@ -172,7 +172,7 @@ export default function ContactUsDashboardPage() {
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">School Name</th>
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Email</th>
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Message</th>
-                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Status</th>
+                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Actions</th>
               </tr>
             </thead>
 

@@ -191,8 +191,8 @@ export default function SubscriptionPage() {
                   </div>
 
                   <ul className="mt-8 space-y-4">
-                    {plan.features.map(feature => (
-                      <li key={feature} className="flex items-center gap-3 text-[15px] text-[#4B5563]">
+                    {plan.features.map((feature, index) => (
+                      <li key={`${plan._id}-${feature}-${index}`} className="flex items-center gap-3 text-[15px] text-[#4B5563]">
                         <CheckCircle2 className="size-5 text-[#34D399]" />
                         <span>{feature}</span>
                       </li>

@@ -4,7 +4,7 @@ import { DollarSign, Users } from "lucide-react";
 
 type KpiCardProps = {
   title: string;
-  value: string;
+  value: string | number;
   icon: "schools" | "revenue";
 };
 

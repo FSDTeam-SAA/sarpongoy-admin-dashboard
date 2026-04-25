@@ -23,6 +23,7 @@ type RegisterItem = {
   email?: string
   totalStudent?: number
   subscription?: string | null
+  subscriptionExpiry?: string
   schoolName?: SchoolRef | string | null
 }
 
@@ -175,6 +176,12 @@ export default function RegisterListPage() {
     return fullName || 'N/A'
   }
 
+  const getStatusLabel = (item: RegisterItem) => {
+    if (!item.subscription) return 'inactive'
+    if (!item.subscriptionExpiry) return 'active'
+    return new Date(item.subscriptionExpiry) > new Date() ? 'active' : 'expired'
+  }
+
   return (
     <div className="min-h-[calc(100vh-6rem)] bg-[#ECF7FD] p-8">
       <section className="rounded-lg bg-white shadow-sm">
@@ -205,14 +212,15 @@ export default function RegisterListPage() {
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Total School Population</th>
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Total Amount</th>
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Status</th>
+                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Actions</th>
               </tr>
             </thead>
 
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="p-0">
-                    <TableSkeleton columns={5} rows={6} />
+                  <td colSpan={6} className="p-0">
+                    <TableSkeleton columns={6} rows={6} />
                   </td>
                 </tr>
               ) : schools.length ? (
@@ -225,6 +233,19 @@ export default function RegisterListPage() {
                     <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">{item.totalStudent ?? 0}</td>
                     <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">
                       ${Number(amountMap[item._id] || 0).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-8 text-center">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-[12px] font-medium ${
+                          getStatusLabel(item) === 'active'
+                            ? 'bg-[#D9FBE2] text-[#2F9E44]'
+                            : getStatusLabel(item) === 'expired'
+                              ? 'bg-[#FFF1BF] text-[#E67700]'
+                              : 'bg-[#FDE2E2] text-[#D92D20]'
+                        }`}
+                      >
+                        {getStatusLabel(item)}
+                      </span>
                     </td>
                     <td className="px-4 py-8">
                       <div className="flex items-center justify-center gap-4">
@@ -249,7 +270,7 @@ export default function RegisterListPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-[16px] text-[#6B7280]">
+                  <td colSpan={6} className="px-4 py-10 text-center text-[16px] text-[#6B7280]">
                     No registered schools found.
                   </td>
                 </tr>

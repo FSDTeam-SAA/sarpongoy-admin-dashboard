@@ -16,6 +16,7 @@ type SessionUser = {
 type ProfileData = {
   firstName?: string
   lastName?: string
+  profilePicture?: string
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL
@@ -26,6 +27,7 @@ export default function ChangePasswordSettingsPage() {
   const accessToken = user?.accessToken
 
   const [profileName, setProfileName] = useState('Admin')
+  const [profileImage, setProfileImage] = useState('')
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [form, setForm] = useState({
     currentPassword: '',
@@ -59,8 +61,10 @@ export default function ChangePasswordSettingsPage() {
 
         const fullName = [result.data?.firstName, result.data?.lastName].filter(Boolean).join(' ')
         setProfileName(fullName || user?.name || user?.email || 'Admin')
+        setProfileImage(result.data?.profilePicture || '')
       } catch {
         setProfileName(user?.name || user?.email || 'Admin')
+        setProfileImage('')
       } finally {
         setLoadingProfile(false)
       }
@@ -129,13 +133,20 @@ export default function ChangePasswordSettingsPage() {
         <>
       <section className="mt-6 rounded-xl border border-[#B9C6D2] bg-[#ECF7FD] px-4 py-3">
         <div className="flex items-center gap-4">
-          <Image
-            src="/images/source.gif"
-            alt="profile"
-            width={72}
-            height={72}
-            className="h-[72px] w-[72px] rounded-full object-cover"
-          />
+          {profileImage ? (
+            <Image
+              src={profileImage}
+              alt="profile"
+              width={72}
+              height={72}
+              className="h-[72px] w-[72px] rounded-full object-cover"
+              unoptimized
+            />
+          ) : (
+            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-white text-[24px] font-semibold text-[#0B5280] shadow-sm">
+              {(profileName[0] || 'A').toUpperCase()}
+            </div>
+          )}
           <div>
             <h2 className="text-[20px] font-semibold text-[#0A0A0B]">{profileName}</h2>
             <p className="text-[16px] text-[#0A0A0B]">@admin</p>

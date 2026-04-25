@@ -13,6 +13,9 @@ type SessionUser = {
 
 type SchoolUser = {
   _id: string
+  email?: string
+  totalStudent?: number
+  status?: string
 }
 
 type SchoolItem = {
@@ -28,6 +31,18 @@ type PaginationMeta = {
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL
+
+const getSchoolEmail = (school: SchoolItem) =>
+  school.school?.find(item => item.email)?.email || 'N/A'
+
+const getTotalStudents = (school: SchoolItem) =>
+  (school.school || []).reduce((total, item) => total + Number(item.totalStudent || 0), 0)
+
+const getSchoolStatus = (school: SchoolItem) => {
+  const statuses = (school.school || []).map(item => item.status).filter(Boolean)
+  if (!statuses.length) return 'inactive'
+  return statuses.includes('active') ? 'active' : statuses[0] || 'inactive'
+}
 
 export default function SchoolListPage() {
   const { data: session } = useSession()
@@ -155,23 +170,35 @@ export default function SchoolListPage() {
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Total Students</th>
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Total Amount</th>
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Status</th>
+                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Actions</th>
               </tr>
             </thead>
 
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="p-0">
-                    <TableSkeleton columns={5} rows={6} />
+                  <td colSpan={6} className="p-0">
+                    <TableSkeleton columns={6} rows={6} />
                   </td>
                 </tr>
               ) : schools.length ? (
                 schools.map(school => (
                   <tr key={school._id} className="border-b border-[#E5E7EB]">
                     <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">{school.name}</td>
-                    <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">N/A</td>
-                    <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">{school.school?.length || 0}</td>
+                    <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">{getSchoolEmail(school)}</td>
+                    <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">{getTotalStudents(school)}</td>
                     <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">$0</td>
+                    <td className="px-4 py-8 text-center">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-[12px] font-medium ${
+                          getSchoolStatus(school) === 'active'
+                            ? 'bg-[#D9FBE2] text-[#2F9E44]'
+                            : 'bg-[#FDE2E2] text-[#D92D20]'
+                        }`}
+                      >
+                        {getSchoolStatus(school)}
+                      </span>
+                    </td>
                     <td className="px-4 py-8">
                       <div className="flex items-center justify-center gap-4">
                         <Link
@@ -195,7 +222,7 @@ export default function SchoolListPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-[16px] text-[#6B7280]">
+                  <td colSpan={6} className="px-4 py-10 text-center text-[16px] text-[#6B7280]">
                     No schools found.
                   </td>
                 </tr>
