@@ -12,6 +12,12 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "Sarpongoy Admin Dashboard",
   description: "Authentication and dashboard management for Sarpongoy.",
+  icons: {
+    icon: "/images/android-chrome-512x512.png",
+    shortcut: "/images/android-chrome-512x512.png",
+    apple: "/images/apple-touch-icon.png",
+  },
+  manifest: "/images/site.webmanifest",
 };
 
 export default function RootLayout({
