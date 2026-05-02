@@ -12,10 +12,26 @@ type SessionUser = {
 
 type PaymentItem = {
   _id: string
-  schoolName?: string
+  schoolName?: string | { name?: string }
   email?: string
   amount?: number
   status?: 'pending' | 'completed' | 'failed' | 'refunded'
+  totalStudents?: number
+  userId?: {
+    email?: string
+    schoolName?: string | { name?: string }
+  }
+}
+
+type SchoolUser = {
+  _id?: string
+  totalStudent?: number
+}
+
+type SchoolDetails = {
+  _id: string
+  name?: string
+  school?: SchoolUser[]
 }
 
 type PaginationMeta = {
@@ -25,6 +41,20 @@ type PaginationMeta = {
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL
+
+const formatSchoolName = (schoolName?: string | { name?: string }) => {
+  if (!schoolName) return 'N/A'
+  return typeof schoolName === 'string' ? schoolName : schoolName.name || 'N/A'
+}
+
+const getSchoolId = (payment: PaymentItem) => {
+  const schoolRef = payment.userId?.schoolName || payment.schoolName
+  if (!schoolRef) return ''
+  return typeof schoolRef === 'string' ? schoolRef : ''
+}
+
+const getTotalStudents = (school?: SchoolDetails) =>
+  (school?.school || []).reduce((total, item) => total + Number(item.totalStudent || 0), 0)
 
 export default function PaymentPage() {
   const { data: session } = useSession()
@@ -69,7 +99,55 @@ export default function PaymentPage() {
           throw new Error(result.message || 'Failed to load payments')
         }
 
-        setPayments(result.data || [])
+        const basePayments = (result.data || []).map(payment => ({
+          ...payment,
+          email: payment.email || payment.userId?.email,
+        }))
+
+        const schoolIds = Array.from(
+          new Set(basePayments.map(payment => getSchoolId(payment)).filter(Boolean)),
+        )
+
+        const schoolEntries = await Promise.all(
+          schoolIds.map(async schoolId => {
+            try {
+              const schoolResponse = await fetch(`${baseUrl}/school/${schoolId}`, {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
+                signal: controller.signal,
+              })
+
+              const schoolResult = (await schoolResponse.json()) as {
+                data?: SchoolDetails
+              }
+
+              if (!schoolResponse.ok || !schoolResult.data) {
+                return null
+              }
+
+              return [schoolId, schoolResult.data] as const
+            } catch {
+              return null
+            }
+          }),
+        )
+
+        const schoolMap = new Map<string, SchoolDetails>(
+          schoolEntries.filter((entry): entry is readonly [string, SchoolDetails] => Boolean(entry)),
+        )
+
+        const normalizedPayments = basePayments.map(payment => {
+          const school = schoolMap.get(getSchoolId(payment))
+
+          return {
+            ...payment,
+            schoolName: school?.name || payment.schoolName,
+            totalStudents: school ? getTotalStudents(school) : undefined,
+          }
+        })
+
+        setPayments(normalizedPayments)
         setMeta(result.meta || { page: 1, limit: 10, total: 0 })
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
@@ -143,9 +221,9 @@ export default function PaymentPage() {
               ) : payments.length ? (
                 payments.map(payment => (
                   <tr key={payment._id} className="border-b border-[#E5E7EB]">
-                    <td className="px-4 py-5 text-center text-[14px] text-[#0A0A0B]">{payment.schoolName || 'N/A'}</td>
+                    <td className="px-4 py-5 text-center text-[14px] text-[#0A0A0B]">{formatSchoolName(payment.schoolName)}</td>
                     <td className="px-4 py-5 text-center text-[14px] text-[#0A0A0B]">{payment.email || 'N/A'}</td>
-                    <td className="px-4 py-5 text-center text-[14px] text-[#0A0A0B]">N/A</td>
+                    <td className="px-4 py-5 text-center text-[14px] text-[#0A0A0B]">{payment.totalStudents ?? 'N/A'}</td>
                     <td className="px-4 py-5 text-center text-[14px] text-[#0A0A0B]">
                       ${Number(payment.amount || 0).toLocaleString()}
                     </td>
