@@ -33,7 +33,7 @@ export default function ForgotPasswordForm() {
   const onSubmit = async (values: ForgotPasswordValues) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/forgot-password`,
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/auth/forgot-password`,
         {
           method: "POST",
           headers: {

@@ -106,7 +106,7 @@ export default function VerifyOtpForm() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/forgot-password`,
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/auth/forgot-password`,
         {
           method: "POST",
           headers: {
@@ -139,7 +139,7 @@ export default function VerifyOtpForm() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/verify-otp`,
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/auth/verify-otp`,
         {
           method: "POST",
           headers: {

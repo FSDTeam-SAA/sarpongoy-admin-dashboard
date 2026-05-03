@@ -62,7 +62,7 @@ export default function ChangePasswordForm() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/reset-password`,
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/auth/reset-password`,
         {
           method: "POST",
           headers: {
