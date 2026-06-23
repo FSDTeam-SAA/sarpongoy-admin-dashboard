@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { PasswordCardSkeleton } from '../../_components/SkeletonBlocks'
 
@@ -237,9 +237,16 @@ export default function ChangePasswordSettingsPage() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex h-11 items-center justify-center rounded-md bg-[#2F6FB3] px-6 text-[15px] font-medium text-white transition hover:bg-[#0B5280] disabled:opacity-60"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#2F6FB3] px-6 text-[15px] font-medium text-white transition hover:bg-[#0B5280] disabled:opacity-60"
           >
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
           </button>
         </div>
       </section>

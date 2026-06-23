@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { ChevronLeft, ChevronRight, Eye, Search, Trash2, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Loader2, Search, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { TableSkeleton } from '../_components/SkeletonBlocks'
 
@@ -37,6 +37,8 @@ export default function ContactUsDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [selectedContact, setSelectedContact] = useState<ContactItem | null>(null)
   const [viewLoading, setViewLoading] = useState(false)
+  const [viewingId, setViewingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!accessToken) return
@@ -95,6 +97,7 @@ export default function ContactUsDashboardPage() {
     if (!accessToken) return
 
     try {
+      setDeletingId(id)
       const response = await fetch(`${baseUrl}/contact/${id}`, {
         method: 'DELETE',
         headers: {
@@ -113,6 +116,8 @@ export default function ContactUsDashboardPage() {
       toast.success('Contact deleted successfully')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to delete contact')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -121,6 +126,7 @@ export default function ContactUsDashboardPage() {
 
     try {
       setViewLoading(true)
+      setViewingId(id)
       const response = await fetch(`${baseUrl}/contact/${id}`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -141,6 +147,7 @@ export default function ContactUsDashboardPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to load contact details')
     } finally {
       setViewLoading(false)
+      setViewingId(null)
     }
   }
 
@@ -196,18 +203,28 @@ export default function ContactUsDashboardPage() {
                         <button
                           type="button"
                           onClick={() => handleView(item._id)}
-                          className="text-[#7A7A7A] transition hover:text-[#0B5280]"
+                          disabled={viewingId === item._id}
+                          className="text-[#7A7A7A] transition hover:text-[#0B5280] disabled:opacity-60"
                           aria-label={`View ${item.schoolName || 'contact'}`}
                         >
-                          <Eye className="size-5" />
+                          {viewingId === item._id ? (
+                            <Loader2 className="size-5 animate-spin" />
+                          ) : (
+                            <Eye className="size-5" />
+                          )}
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDelete(item._id)}
-                          className="text-red-500 transition hover:text-red-600"
+                          disabled={deletingId === item._id}
+                          className="text-red-500 transition hover:text-red-600 disabled:opacity-60"
                           aria-label={`Delete ${item.schoolName || 'contact'}`}
                         >
-                          <Trash2 className="size-5" />
+                          {deletingId === item._id ? (
+                            <Loader2 className="size-5 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-5" />
+                          )}
                         </button>
                       </div>
                     </td>
@@ -279,7 +296,8 @@ export default function ContactUsDashboardPage() {
 
       {viewLoading ? (
         <div className="fixed inset-0 z-[69] flex items-center justify-center bg-black/20 px-4 backdrop-blur-sm">
-          <div className="rounded-lg bg-white px-6 py-5 text-[15px] font-medium text-[#0A0A0B] shadow-2xl">
+          <div className="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-5 text-[15px] font-medium text-[#0A0A0B] shadow-2xl">
+            <Loader2 className="size-4 animate-spin text-[#0B5280]" />
             Loading contact details...
           </div>
         </div>

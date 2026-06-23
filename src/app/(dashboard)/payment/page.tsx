@@ -76,6 +76,7 @@ export default function PaymentPage() {
         const params = new URLSearchParams({
           page: String(meta.page),
           limit: String(meta.limit),
+          paymentType: 'school',
         })
 
         if (search.trim()) {

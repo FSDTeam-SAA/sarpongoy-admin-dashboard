@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Image from 'next/image'
-import { Camera, FileText, KeyRound } from 'lucide-react'
+import { Camera, FileText, KeyRound, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ProfileFormSkeleton } from '../_components/SkeletonBlocks'
 
@@ -277,7 +277,7 @@ export default function SettingsPage() {
         disabled={loading || saving}
         className="mt-8 inline-flex h-14 w-full items-center justify-center gap-3 rounded-md bg-[#2F6FB3] text-[18px] font-semibold text-white transition hover:bg-[#0B5280] disabled:opacity-60"
       >
-        <FileText className="size-5" />
+        {saving ? <Loader2 className="size-5 animate-spin" /> : <FileText className="size-5" />}
         {saving ? 'Saving...' : 'Save Changes'}
       </button>
     </div>

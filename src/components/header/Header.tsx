@@ -24,6 +24,7 @@ export default function Header() {
     user?.name ?? user?.email ?? "Admin"
   );
   const [profileImage, setProfileImage] = useState("");
+  const [imageVersion, setImageVersion] = useState(Date.now());
 
   useEffect(() => {
     const accessToken = user?.accessToken;
@@ -62,6 +63,7 @@ export default function Header() {
 
         setDisplayName(name);
         setProfileImage(result.data?.profilePicture || "");
+        setImageVersion(Date.now());
       } catch {
         setDisplayName(user?.name ?? user?.email ?? "Admin");
       }
@@ -94,7 +96,7 @@ export default function Header() {
       >
         {profileImage ? (
           <Image
-            src={profileImage}
+            src={`${profileImage}${profileImage.includes("?") ? "&" : "?"}v=${imageVersion}`}
             alt="avatar"
             width={44}
             height={44}

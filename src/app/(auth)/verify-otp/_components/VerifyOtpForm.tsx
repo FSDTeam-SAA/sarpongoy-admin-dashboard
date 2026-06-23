@@ -139,7 +139,7 @@ export default function VerifyOtpForm() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/auth/verify-otp`,
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/auth/verify`,
         {
           method: "POST",
           headers: {

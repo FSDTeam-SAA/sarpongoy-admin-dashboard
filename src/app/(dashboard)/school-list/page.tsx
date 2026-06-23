@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { ChevronLeft, ChevronRight, Eye, Plus, Search, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Loader2, PencilLine, Plus, Search, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TableSkeleton } from '../_components/SkeletonBlocks'
 
@@ -14,13 +14,14 @@ type SessionUser = {
 type SchoolUser = {
   _id: string
   email?: string
-  totalStudent?: number
   status?: string
 }
 
 type SchoolItem = {
   _id: string
   name: string
+  subscribePrice?: number
+  NDA?: string
   school?: SchoolUser[]
 }
 
@@ -32,16 +33,32 @@ type PaginationMeta = {
 
 const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL
 
-const getSchoolEmail = (school: SchoolItem) =>
-  school.school?.find(item => item.email)?.email || 'N/A'
-
-const getTotalStudents = (school: SchoolItem) =>
-  (school.school || []).reduce((total, item) => total + Number(item.totalStudent || 0), 0)
-
 const getSchoolStatus = (school: SchoolItem) => {
+  if (school.NDA?.trim() || school.subscribePrice) {
+    return 'active'
+  }
+
   const statuses = (school.school || []).map(item => item.status).filter(Boolean)
-  if (!statuses.length) return 'inactive'
-  return statuses.includes('active') ? 'active' : statuses[0] || 'inactive'
+  if (!statuses.length) return 'pending'
+  return statuses.includes('active') ? 'active' : statuses[0] || 'pending'
+}
+
+const formatCurrency = (value?: number) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+  }).format(Number(value || 0))
+
+const isUrl = (value?: string) => {
+  if (!value) return false
+  return /^(https?:|blob:|data:)\S+/i.test(value.trim())
+}
+
+const getNdaLabel = (nda?: string) => {
+  if (!nda?.trim()) return 'N/A'
+  if (isUrl(nda)) return 'View NDA'
+  return 'NDA on file'
 }
 
 export default function SchoolListPage() {
@@ -53,6 +70,7 @@ export default function SchoolListPage() {
   const [meta, setMeta] = useState<PaginationMeta>({ page: 1, limit: 10, total: 0 })
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!accessToken) return
@@ -110,6 +128,7 @@ export default function SchoolListPage() {
     if (!accessToken) return
 
     try {
+      setDeletingId(id)
       const response = await fetch(`${baseUrl}/school/${id}`, {
         method: 'DELETE',
         headers: {
@@ -127,6 +146,8 @@ export default function SchoolListPage() {
       toast.success('School deleted successfully')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to delete school')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -166,9 +187,8 @@ export default function SchoolListPage() {
             <thead className="bg-[#F9FAFB]">
               <tr className="border-b border-[#E5E7EB]">
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">School Name</th>
-                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Email</th>
-                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Total Students</th>
-                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Total Amount</th>
+                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Subscribe Price</th>
+                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">NDA</th>
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Status</th>
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Actions</th>
               </tr>
@@ -177,17 +197,33 @@ export default function SchoolListPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="p-0">
-                    <TableSkeleton columns={6} rows={6} />
+                  <td colSpan={5} className="p-0">
+                    <TableSkeleton columns={5} rows={6} />
                   </td>
                 </tr>
               ) : schools.length ? (
                 schools.map(school => (
                   <tr key={school._id} className="border-b border-[#E5E7EB]">
                     <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">{school.name}</td>
-                    <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">{getSchoolEmail(school)}</td>
-                    <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">{getTotalStudents(school)}</td>
-                    <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">$0</td>
+                    <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">
+                      {formatCurrency(school.subscribePrice)}
+                    </td>
+                    <td className="px-4 py-8 text-center text-[16px] font-normal text-[#0A0A0B]">
+                      {isUrl(school.NDA) ? (
+                        <a
+                          href={school.NDA}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium text-[#0B5280] transition hover:text-[#094570]"
+                        >
+                          {getNdaLabel(school.NDA)}
+                        </a>
+                      ) : (
+                        <span title={school.NDA}>
+                          {getNdaLabel(school.NDA)}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-8 text-center">
                       <span
                         className={`inline-flex rounded-full px-3 py-1 text-[12px] font-medium ${
@@ -208,13 +244,25 @@ export default function SchoolListPage() {
                         >
                           <Eye className="size-5" />
                         </Link>
+                        <Link
+                          href={`/school-list/${school._id}/edit`}
+                          className="text-[#7A7A7A] transition hover:text-[#0B5280]"
+                          aria-label={`Edit ${school.name}`}
+                        >
+                          <PencilLine className="size-5" />
+                        </Link>
                         <button
                           type="button"
                           onClick={() => handleDelete(school._id)}
-                          className="text-red-500 transition hover:text-red-600"
+                          disabled={deletingId === school._id}
+                          className="text-red-500 transition hover:text-red-600 disabled:opacity-60"
                           aria-label={`Delete ${school.name}`}
                         >
-                          <Trash2 className="size-5" />
+                          {deletingId === school._id ? (
+                            <Loader2 className="size-5 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-5" />
+                          )}
                         </button>
                       </div>
                     </td>
@@ -222,7 +270,7 @@ export default function SchoolListPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-[16px] text-[#6B7280]">
+                  <td colSpan={5} className="px-4 py-10 text-center text-[16px] text-[#6B7280]">
                     No schools found.
                   </td>
                 </tr>

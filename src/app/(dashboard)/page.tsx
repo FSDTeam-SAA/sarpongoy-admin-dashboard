@@ -14,8 +14,7 @@ type UserItem = {
   _id: string
   email?: string
   totalStudent?: number
-  subscription?: string | { status?: string } | null
-  subscriptionExpiry?: string
+  status?: string
   schoolName?: string | { name?: string }
 }
 
@@ -115,7 +114,7 @@ export default function DashboardPage() {
             },
           ),
           fetch(
-            `${baseUrl}/payment?status=completed&page=1&limit=500&sortBy=createdAt&sortOrder=desc`,
+            `${baseUrl}/payment?status=completed&paymentType=school&page=1&limit=500&sortBy=createdAt&sortOrder=desc`,
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -157,9 +156,7 @@ export default function DashboardPage() {
 
         const schoolRows = (schoolResult.data || []).map(userItem => {
           const email = userItem.email || ''
-          const isActive =
-            !!userItem.subscription &&
-            (!userItem.subscriptionExpiry || new Date(userItem.subscriptionExpiry) > new Date())
+          const isActive = (userItem.status || 'active') === 'active'
 
           return {
             _id: userItem._id,

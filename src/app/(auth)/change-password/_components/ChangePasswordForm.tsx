@@ -70,7 +70,7 @@ export default function ChangePasswordForm() {
           },
           body: JSON.stringify({
             email: emailRef.current,
-            password: values.password,
+            newPassword: values.password,
           }),
         }
       );

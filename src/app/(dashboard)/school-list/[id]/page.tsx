@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, PencilLine } from 'lucide-react'
 import { toast } from 'sonner'
 import { SchoolDetailsSkeleton } from '../../_components/SkeletonBlocks'
 
@@ -24,10 +24,27 @@ type SchoolMember = {
 type SchoolDetails = {
   _id: string
   name: string
+  subscribePrice?: number
+  NDA?: string
   school?: SchoolMember[]
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL
+
+const formatCurrency = (value?: number) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+  }).format(Number(value || 0))
+
+const isUrl = (value?: string) => Boolean(value && /^(https?:|blob:|data:)\S+/i.test(value.trim()))
+
+const getNdaLabel = (nda?: string) => {
+  if (!nda?.trim()) return 'No NDA added.'
+  if (isUrl(nda)) return 'View NDA'
+  return 'NDA on file'
+}
 
 export default function SchoolDetailsPage() {
   const params = useParams<{ id: string }>()
@@ -75,13 +92,25 @@ export default function SchoolDetailsPage() {
     <div className="min-h-[calc(100vh-6rem)] bg-[#ECF7FD] px-8 py-10">
       <section className="rounded-none bg-white px-8 py-8 shadow-sm">
         <div className="mb-4">
-          <Link
-            href="/school-list"
-            className="inline-flex items-center text-[14px] font-medium text-[#0B5280] transition hover:text-[#094570]"
-          >
-            <ArrowLeft className="mr-2 size-4" />
-            Back to School List
-          </Link>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Link
+              href="/school-list"
+              className="inline-flex items-center text-[14px] font-medium text-[#0B5280] transition hover:text-[#094570]"
+            >
+              <ArrowLeft className="mr-2 size-4" />
+              Back to School List
+            </Link>
+
+            {school?._id ? (
+              <Link
+                href={`/school-list/${school._id}/edit`}
+                className="inline-flex items-center gap-2 rounded-md bg-[#0B5280] px-4 py-2 text-[14px] font-semibold text-white transition hover:bg-[#094570]"
+              >
+                Edit School
+                <PencilLine className="size-4" />
+              </Link>
+            ) : null}
+          </div>
         </div>
 
         {loading ? (
@@ -93,6 +122,34 @@ export default function SchoolDetailsPage() {
               <h1 className="text-[28px] font-semibold text-[#5A5A5A]">
                 {school?.name || 'School Details'}
               </h1>
+            </div>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
+              <div className="rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] p-4">
+                <p className="text-[13px] font-medium text-[#6B7280]">Subscribe Price</p>
+                <p className="mt-2 text-[26px] font-semibold text-[#0A0A0B]">{formatCurrency(school?.subscribePrice)}</p>
+              </div>
+              <div className="rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] p-4">
+                <p className="text-[13px] font-medium text-[#6B7280]">NDA</p>
+                {school?.NDA ? (
+                  isUrl(school.NDA) ? (
+                    <a
+                      href={school.NDA}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-flex text-[16px] font-medium text-[#0B5280] transition hover:text-[#094570]"
+                    >
+                      {getNdaLabel(school.NDA)}
+                    </a>
+                  ) : (
+                    <p className="mt-2 max-h-24 overflow-hidden whitespace-pre-wrap text-[15px] leading-6 text-[#0A0A0B]">
+                      {getNdaLabel(school.NDA)}
+                    </p>
+                  )
+                ) : (
+                  <p className="mt-2 text-[15px] text-[#6B7280]">No NDA added.</p>
+                )}
+              </div>
             </div>
 
             <div className="mt-10">

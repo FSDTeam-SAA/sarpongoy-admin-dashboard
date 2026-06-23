@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { ArrowLeft, CalendarDays, Loader2, Upload } from 'lucide-react'
+import { ArrowLeft, CreditCard, Loader2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { TableSkeleton } from '../../_components/SkeletonBlocks'
 
@@ -34,7 +34,6 @@ type UserDetails = {
   totalStudent?: number
   schoolLogo?: string
   uploadeSignature?: string
-  subscriptionExpiry?: string
   schoolName?: string | null
   studentList?: StudentEntry[]
 }
@@ -42,6 +41,7 @@ type UserDetails = {
 type SchoolDetails = {
   _id?: string
   name?: string
+  subscribePrice?: number
 }
 
 type PaymentItem = {
@@ -103,7 +103,7 @@ export default function RegisterDetailsPage() {
 
         if (profile?.email) {
           const paymentResponse = await fetch(
-            `${baseUrl}/payment?searchTerm=${encodeURIComponent(profile.email)}&status=completed&limit=100`,
+            `${baseUrl}/payment?searchTerm=${encodeURIComponent(profile.email)}&status=completed&paymentType=school&limit=100`,
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -239,17 +239,11 @@ export default function RegisterDetailsPage() {
 
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-md bg-[#F6F6F6] px-6 py-5 text-center">
-                  <CalendarDays className="mx-auto size-6 text-[#0B2E59]" />
+                  <CreditCard className="mx-auto size-6 text-[#0B2E59]" />
                   <p className="mt-3 text-[24px] font-medium text-[#0A0A0B]">
-                    {details.subscriptionExpiry
-                      ? new Date(details.subscriptionExpiry).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })
-                      : 'N/A'}
+                    ${Number(school?.subscribePrice || 0).toLocaleString()}
                   </p>
-                  <p className="mt-1 text-[16px] text-[#8C8C8C]">Expired Date</p>
+                  <p className="mt-1 text-[16px] text-[#8C8C8C]">School Subscription</p>
                 </div>
 
                 <div className="rounded-md bg-[#F6F6F6] px-6 py-5 text-center">

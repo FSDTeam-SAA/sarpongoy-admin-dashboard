@@ -7,10 +7,10 @@ import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import {
   AlertTriangle,
-  BadgeCheck,
   ClipboardList,
   GraduationCap,
   LayoutDashboard,
+  Loader2,
   LogOut,
   Wallet,
   Phone,
@@ -22,7 +22,6 @@ const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
   { label: 'School List', icon: GraduationCap, href: '/school-list' },
   { label: 'Register List', icon: ClipboardList, href: '/register-list' },
-  { label: 'Subscription', icon: BadgeCheck, href: '/subscription' },
   { label: 'Payment', icon: Wallet, href: '/payment' },
   { label: 'Contact Us', icon: Phone, href: '/contact-us' },
   { label: 'Settings', icon: Settings, href: '/settings' },
@@ -124,9 +123,16 @@ export function Sidebar() {
                 type="button"
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="flex h-11 flex-1 items-center justify-center rounded-md bg-[#0B5280] text-[15px] font-semibold text-white transition hover:bg-[#094570] disabled:opacity-60"
+                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-md bg-[#0B5280] text-[15px] font-semibold text-white transition hover:bg-[#094570] disabled:opacity-60"
               >
-                {isLoggingOut ? 'Logging out...' : 'Yes, Log Out'}
+                {isLoggingOut ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Logging out...
+                  </>
+                ) : (
+                  'Yes, Log Out'
+                )}
               </button>
             </div>
           </div>

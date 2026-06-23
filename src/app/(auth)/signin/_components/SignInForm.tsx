@@ -164,6 +164,16 @@ export default function SignInForm() {
             "Log In"
           )}
         </Button>
+
+        <p className="pt-2 text-center text-[14px] text-[#6B7280]">
+          Need an admin account?{' '}
+          <Link
+            href="/signup"
+            className="font-semibold text-[#0B5280] transition hover:text-[#094570]"
+          >
+            Sign up
+          </Link>
+        </p>
       </form>
     </div>
   );

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { ChevronLeft, ChevronRight, Eye, Search, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Loader2, Search, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TableSkeleton } from '../_components/SkeletonBlocks'
 
@@ -22,8 +22,7 @@ type RegisterItem = {
   lastName?: string
   email?: string
   totalStudent?: number
-  subscription?: string | null
-  subscriptionExpiry?: string
+  status?: string
   schoolName?: SchoolRef | string | null
 }
 
@@ -53,6 +52,7 @@ export default function RegisterListPage() {
   const [meta, setMeta] = useState<PaginationMeta>({ page: 1, limit: 10, total: 0 })
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!accessToken) return
@@ -97,7 +97,7 @@ export default function RegisterListPage() {
             if (!item.email) return [item._id, 0] as const
 
             const paymentResponse = await fetch(
-              `${baseUrl}/payment?searchTerm=${encodeURIComponent(item.email)}&status=completed&limit=100`,
+              `${baseUrl}/payment?searchTerm=${encodeURIComponent(item.email)}&status=completed&paymentType=school&limit=100`,
               {
                 headers: {
                   Authorization: `Bearer ${accessToken}`,
@@ -141,6 +141,7 @@ export default function RegisterListPage() {
     if (!accessToken) return
 
     try {
+      setDeletingId(id)
       const response = await fetch(`${baseUrl}/user/${id}`, {
         method: 'DELETE',
         headers: {
@@ -164,6 +165,8 @@ export default function RegisterListPage() {
       toast.success('Registered school deleted successfully')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to delete school')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -177,9 +180,7 @@ export default function RegisterListPage() {
   }
 
   const getStatusLabel = (item: RegisterItem) => {
-    if (!item.subscription) return 'inactive'
-    if (!item.subscriptionExpiry) return 'active'
-    return new Date(item.subscriptionExpiry) > new Date() ? 'active' : 'expired'
+    return (item.status || 'active').toLowerCase()
   }
 
   return (
@@ -239,9 +240,7 @@ export default function RegisterListPage() {
                         className={`inline-flex rounded-full px-3 py-1 text-[12px] font-medium ${
                           getStatusLabel(item) === 'active'
                             ? 'bg-[#D9FBE2] text-[#2F9E44]'
-                            : getStatusLabel(item) === 'expired'
-                              ? 'bg-[#FFF1BF] text-[#E67700]'
-                              : 'bg-[#FDE2E2] text-[#D92D20]'
+                            : 'bg-[#FDE2E2] text-[#D92D20]'
                         }`}
                       >
                         {getStatusLabel(item)}
@@ -259,10 +258,15 @@ export default function RegisterListPage() {
                         <button
                           type="button"
                           onClick={() => handleDelete(item._id)}
-                          className="text-red-500 transition hover:text-red-600"
+                          disabled={deletingId === item._id}
+                          className="text-red-500 transition hover:text-red-600 disabled:opacity-60"
                           aria-label={`Delete ${getSchoolLabel(item)}`}
                         >
-                          <Trash2 className="size-5" />
+                          {deletingId === item._id ? (
+                            <Loader2 className="size-5 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-5" />
+                          )}
                         </button>
                       </div>
                     </td>

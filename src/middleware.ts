@@ -72,6 +72,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAuthPage =
     pathname === "/signin" ||
+    pathname === "/signup" ||
     pathname === "/forgot-password" ||
     pathname === "/verify-otp" ||
     pathname === "/change-password";
@@ -104,6 +105,7 @@ export const config = {
     "/contact-us/:path*",
     "/settings/:path*",
     "/signin",
+    "/signup",
     "/forgot-password",
     "/verify-otp",
     "/change-password",
