@@ -21,6 +21,12 @@ export default function AddSchoolPage() {
   const [schoolName, setSchoolName] = useState('')
   const [subscribePrice, setSubscribePrice] = useState('')
   const [ndaFile, setNdaFile] = useState<File | null>(null)
+  const [termDates, setTermDates] = useState({
+    firstTermDueDate: '',
+    secondTermDueDate: '',
+    thirdTermDueDate: '',
+    fullPaymentDueDate: '',
+  })
   const [saving, setSaving] = useState(false)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -44,6 +50,10 @@ export default function AddSchoolPage() {
       if (ndaFile) {
         formData.append('NDA', ndaFile)
       }
+
+      Object.entries(termDates).forEach(([key, value]) => {
+        if (value) formData.append(key, value)
+      })
 
       const response = await fetch(`${baseUrl}/school`, {
         method: 'POST',
@@ -101,7 +111,7 @@ export default function AddSchoolPage() {
 
             <div className="mt-6">
               <label htmlFor="subscribePrice" className="block text-[13px] font-medium text-[#5A5A5A]">
-                Subscribe Price (Optional)
+                Per-student Charge (Optional)
               </label>
               <input
                 id="subscribePrice"
@@ -118,7 +128,7 @@ export default function AddSchoolPage() {
 
             <div className="mt-6">
               <label htmlFor="ndaFile" className="block text-[13px] font-medium text-[#5A5A5A]">
-                NDA File (Optional)
+                School Contract File (Optional)
               </label>
               <input
                 id="ndaFile"
@@ -132,8 +142,38 @@ export default function AddSchoolPage() {
                 <p className="mt-2 text-[12px] text-[#6B7280]">Selected: {ndaFile.name}</p>
               ) : null}
               <p className="mt-2 text-[12px] text-[#6B7280]">
-                Upload the school NDA file when available.
+                Upload the school contract file when available.
               </p>
+            </div>
+
+            <div className="mt-6 rounded-sm border border-[#E5E7EB] bg-[#F9FAFB] p-4">
+              <p className="text-[14px] font-semibold text-[#111827]">Term Due Dates</p>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                {[
+                  ['firstTermDueDate', 'First Term Due Date'],
+                  ['secondTermDueDate', 'Second Term Due Date'],
+                  ['thirdTermDueDate', 'Third Term Due Date'],
+                  ['fullPaymentDueDate', 'Full Payment Due Date'],
+                ].map(([key, label]) => (
+                  <div key={key}>
+                    <label htmlFor={key} className="block text-[13px] font-medium text-[#5A5A5A]">
+                      {label}
+                    </label>
+                    <input
+                      id={key}
+                      type="date"
+                      value={termDates[key as keyof typeof termDates]}
+                      onChange={event =>
+                        setTermDates(current => ({
+                          ...current,
+                          [key]: event.target.value,
+                        }))
+                      }
+                      className="mt-2 h-11 w-full rounded-sm border border-[#D1D5DB] px-4 text-[14px] text-[#0A0A0B] outline-none transition focus:border-[#0B5280]"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
 
             <button

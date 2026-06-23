@@ -22,7 +22,7 @@ export default function SubscriptionPage() {
             <p className="mt-3 text-[16px] leading-7 text-[#64748B]">
               The old global subscription packages are no longer used. Add or
               update a school from School List and set that school&apos;s own
-              subscription price and NDA file there.
+              per-student charge and school contract file there.
             </p>
           </div>
 

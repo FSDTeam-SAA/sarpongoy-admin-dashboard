@@ -57,8 +57,8 @@ const isUrl = (value?: string) => {
 
 const getNdaLabel = (nda?: string) => {
   if (!nda?.trim()) return 'N/A'
-  if (isUrl(nda)) return 'View NDA'
-  return 'NDA on file'
+  if (isUrl(nda)) return 'View School Contract'
+  return 'School contract on file'
 }
 
 export default function SchoolListPage() {
@@ -187,8 +187,8 @@ export default function SchoolListPage() {
             <thead className="bg-[#F9FAFB]">
               <tr className="border-b border-[#E5E7EB]">
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">School Name</th>
-                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Subscribe Price</th>
-                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">NDA</th>
+                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Per-student Charge</th>
+                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">School Contract</th>
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Status</th>
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Actions</th>
               </tr>
