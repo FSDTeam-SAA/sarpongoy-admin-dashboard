@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils'
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
   { label: 'School List', icon: GraduationCap, href: '/school-list' },
-  { label: 'Register List', icon: ClipboardList, href: '/register-list' },
+  { label: 'Registered List', icon: ClipboardList, href: '/register-list' },
   { label: 'Payment', icon: Wallet, href: '/payment' },
   { label: 'Contact Us', icon: Phone, href: '/contact-us' },
   { label: 'Settings', icon: Settings, href: '/settings' },

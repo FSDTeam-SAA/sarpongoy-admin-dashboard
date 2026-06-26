@@ -187,7 +187,7 @@ export default function RegisterListPage() {
     <div className="min-h-[calc(100vh-6rem)] bg-[#ECF7FD] p-8">
       <section className="rounded-lg bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E5E7EB] px-5 py-4">
-          <h1 className="text-[18px] font-semibold text-[#0A0A0B]">Register Lists</h1>
+          <h1 className="text-[18px] font-semibold text-[#0A0A0B]">Registered List</h1>
 
           <div className="flex h-11 w-full min-w-[260px] max-w-[320px] items-center rounded-full border border-[#D1D5DB] px-4 text-[#6B7280] sm:w-[320px]">
             <input
@@ -213,7 +213,7 @@ export default function RegisterListPage() {
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Total School Population</th>
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Total Amount</th>
                 <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Status</th>
-                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Actions</th>
+                <th className="px-4 py-4 text-center text-[16px] font-bold text-[#6B7280]">Action</th>
               </tr>
             </thead>
 

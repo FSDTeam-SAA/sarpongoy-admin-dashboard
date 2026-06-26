@@ -9,11 +9,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Download,
   Eye,
   Loader2,
   Search,
   ShieldCheck,
   WalletCards,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TableSkeleton } from '../_components/SkeletonBlocks'
@@ -34,6 +36,9 @@ type PaymentItem = {
   paymentMethod?: 'stripe' | 'offline'
   paymentPlan?: 'first_term' | 'second_term' | 'third_term' | 'full_year'
   totalStudents?: number
+  offlinePaymentNote?: string
+  createdAt?: string
+  updatedAt?: string
   userId?: {
     email?: string
     totalStudent?: number
@@ -81,9 +86,9 @@ type PaginationMeta = {
 const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL
 
 const formatCurrency = (amount?: number) =>
-  new Intl.NumberFormat('en-GB', {
+  new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'GBP',
+    currency: 'USD',
     minimumFractionDigits: 2,
   }).format(Number(amount || 0))
 
@@ -119,7 +124,7 @@ const formatPlan = (plan?: PaymentItem['paymentPlan']) => {
   if (plan === 'first_term') return 'First Term'
   if (plan === 'second_term') return 'Second Term'
   if (plan === 'third_term') return 'Third Term'
-  if (plan === 'full_year') return 'Full School Year'
+  if (plan === 'full_year') return 'Full Term'
   return 'N/A'
 }
 
@@ -134,6 +139,17 @@ const formatTerm = (term?: SchoolPaymentStatus['activeTerm']) => {
 const formatStatus = (status?: string) =>
   status ? status.replace(/_/g, ' ') : 'unknown'
 
+const formatDate = (value?: string) => {
+  if (!value) return 'N/A'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'N/A'
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+  }).format(date)
+}
+
 export default function PaymentPage() {
   const { data: session } = useSession()
   const user = session?.user as SessionUser | undefined
@@ -145,9 +161,11 @@ export default function PaymentPage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [approvingId, setApprovingId] = useState('')
+  const [invoiceDownloadingId, setInvoiceDownloadingId] = useState('')
   const [updatingStatusId, setUpdatingStatusId] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
   const [activeView, setActiveView] = useState<'status' | 'payments'>('status')
+  const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(null)
 
   useEffect(() => {
     if (!accessToken) return
@@ -290,6 +308,7 @@ export default function PaymentPage() {
       }
 
       toast.success('Offline payment approved and school access activated.')
+      setSelectedPayment(null)
       fetchPaymentsPage()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to approve offline payment')
@@ -323,6 +342,38 @@ export default function PaymentPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to update payment status')
     } finally {
       setUpdatingStatusId('')
+    }
+  }
+
+  const handleDownloadInvoice = async (paymentId: string) => {
+    if (!accessToken) return
+
+    try {
+      setInvoiceDownloadingId(paymentId)
+      const response = await fetch(`${baseUrl}/payment/${paymentId}/invoice`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      if (!response.ok) {
+        const result = (await response.json().catch(() => null)) as { message?: string } | null
+        throw new Error(result?.message || 'Failed to download invoice')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `invoice-${paymentId.slice(-8)}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to download invoice')
+    } finally {
+      setInvoiceDownloadingId('')
     }
   }
 
@@ -581,23 +632,44 @@ export default function PaymentPage() {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right">
-                          {payment.status === 'offline_pending' ? (
+                          <div className="flex items-center justify-end gap-2">
                             <button
                               type="button"
-                              onClick={() => handleApproveOffline(payment._id)}
-                              disabled={approvingId === payment._id}
-                              className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-[#0B5280] px-3 text-[13px] font-semibold text-white transition hover:bg-[#094570] disabled:opacity-60"
+                              onClick={() => setSelectedPayment(payment)}
+                              className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[#CBD5E1] px-3 text-[13px] font-semibold text-[#0B5280] transition hover:border-[#0B5280] hover:bg-[#F0F7FF]"
                             >
-                              {approvingId === payment._id ? (
-                                <Loader2 className="size-4 animate-spin" />
-                              ) : (
-                                <CheckCircle2 className="size-4" />
-                              )}
-                              Approve
+                              <Eye className="size-4" />
+                              View
                             </button>
-                          ) : (
-                            <span className="text-[13px] text-[#94A3B8]">No action</span>
-                          )}
+
+                            {payment.status === 'completed' ? (
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadInvoice(payment._id)}
+                                disabled={invoiceDownloadingId === payment._id}
+                                className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[#CBD5E1] px-3 text-[13px] font-semibold text-[#0B5280] transition hover:border-[#0B5280] hover:bg-[#F0F7FF] disabled:opacity-60"
+                              >
+                                <Download className="size-4" />
+                                Invoice
+                              </button>
+                            ) : null}
+
+                            {payment.status === 'offline_pending' ? (
+                              <button
+                                type="button"
+                                onClick={() => handleApproveOffline(payment._id)}
+                                disabled={approvingId === payment._id}
+                                className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-[#0B5280] px-3 text-[13px] font-semibold text-white transition hover:bg-[#094570] disabled:opacity-60"
+                              >
+                                {approvingId === payment._id ? (
+                                  <Loader2 className="size-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle2 className="size-4" />
+                                )}
+                                Approve
+                              </button>
+                            ) : null}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -647,6 +719,119 @@ export default function PaymentPage() {
           </>
         )}
       </div>
+
+      {selectedPayment ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0A0A0B]/35 px-4 py-6 backdrop-blur-[2px]">
+          <section className="w-full max-w-[720px] overflow-hidden rounded-lg bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-[#E5E7EB] px-6 py-5">
+              <div>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#608BB9]">
+                  Payment Detail
+                </p>
+                <h2 className="mt-1 text-[22px] font-semibold text-[#0A0A0B]">
+                  {formatSchoolName(selectedPayment.schoolName)}
+                </h2>
+                <p className="mt-1 text-[14px] text-[#64748B]">
+                  {selectedPayment.email || 'No billing email'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedPayment(null)}
+                className="flex size-9 items-center justify-center rounded-md border border-[#CBD5E1] text-[#64748B] transition hover:border-[#0B5280] hover:text-[#0B5280]"
+                aria-label="Close payment detail"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] overflow-y-auto px-6 py-5">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-md border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">Plan</p>
+                  <p className="mt-1 text-[15px] font-semibold text-[#0A0A0B]">{formatPlan(selectedPayment.paymentPlan)}</p>
+                </div>
+                <div className="rounded-md border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">Method</p>
+                  <p className="mt-1 text-[15px] font-semibold capitalize text-[#0A0A0B]">{selectedPayment.paymentMethod || 'stripe'}</p>
+                </div>
+                <div className="rounded-md border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">Status</p>
+                  <span className={`mt-2 inline-flex rounded-full px-3 py-1 text-[12px] font-semibold capitalize ${renderStatus(selectedPayment.status)}`}>
+                    {formatStatus(selectedPayment.status)}
+                  </span>
+                </div>
+                <div className="rounded-md border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">Submitted</p>
+                  <p className="mt-1 text-[15px] font-semibold text-[#0A0A0B]">{formatDate(selectedPayment.createdAt)}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 overflow-hidden rounded-md border border-[#E2E8F0]">
+                <div className="flex items-center justify-between gap-4 border-b border-[#E2E8F0] px-4 py-3 text-[14px]">
+                  <span className="text-[#64748B]">Students</span>
+                  <strong className="text-[#0A0A0B]">{selectedPayment.totalStudents ?? 'N/A'}</strong>
+                </div>
+                <div className="flex items-center justify-between gap-4 border-b border-[#E2E8F0] px-4 py-3 text-[14px]">
+                  <span className="text-[#64748B]">Per-student charge</span>
+                  <strong className="text-[#0A0A0B]">{formatCurrency(selectedPayment.perStudentCharge)}</strong>
+                </div>
+                <div className="flex items-center justify-between gap-4 border-b border-[#E2E8F0] px-4 py-3 text-[14px]">
+                  <span className="text-[#64748B]">Calculated total</span>
+                  <strong className="text-[#0A0A0B]">{formatCurrency(selectedPayment.totalAmount)}</strong>
+                </div>
+                <div className="flex items-center justify-between gap-4 bg-[#EEF6FB] px-4 py-3 text-[15px]">
+                  <span className="font-semibold text-[#063D5B]">Payment amount</span>
+                  <strong className="text-[#063D5B]">{formatCurrency(selectedPayment.amount)}</strong>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-md border border-[#E2E8F0] px-4 py-3">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">Offline note</p>
+                <p className="mt-2 whitespace-pre-wrap text-[14px] leading-6 text-[#0A0A0B]">
+                  {selectedPayment.offlinePaymentNote?.trim() || 'No note submitted.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap justify-end gap-3 border-t border-[#E5E7EB] px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setSelectedPayment(null)}
+                className="h-10 rounded-md border border-[#CBD5E1] px-4 text-[14px] font-semibold text-[#334155] transition hover:bg-[#F8FAFC]"
+              >
+                Close
+              </button>
+              {selectedPayment.status === 'completed' ? (
+                <button
+                  type="button"
+                  onClick={() => handleDownloadInvoice(selectedPayment._id)}
+                  disabled={invoiceDownloadingId === selectedPayment._id}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[#0B5280] px-4 text-[14px] font-semibold text-[#0B5280] transition hover:bg-[#F0F7FF] disabled:opacity-60"
+                >
+                  <Download className="size-4" />
+                  {invoiceDownloadingId === selectedPayment._id ? 'Downloading...' : 'Download Invoice'}
+                </button>
+              ) : null}
+              {selectedPayment.status === 'offline_pending' ? (
+                <button
+                  type="button"
+                  onClick={() => handleApproveOffline(selectedPayment._id)}
+                  disabled={approvingId === selectedPayment._id}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0B5280] px-4 text-[14px] font-semibold text-white transition hover:bg-[#094570] disabled:opacity-60"
+                >
+                  {approvingId === selectedPayment._id ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="size-4" />
+                  )}
+                  Approve Payment
+                </button>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   )
 }

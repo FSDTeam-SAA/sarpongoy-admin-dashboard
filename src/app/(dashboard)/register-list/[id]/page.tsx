@@ -193,7 +193,7 @@ export default function RegisterDetailsPage() {
       <section className="rounded-sm bg-[#ECF7FD] px-3 py-2">
         <Link href="/register-list" className="inline-flex items-center gap-2 text-[14px] font-medium text-[#0B5280]">
           <ArrowLeft className="size-4" />
-          Back to Register List
+          Back to Registered List
         </Link>
 
         {loading ? (

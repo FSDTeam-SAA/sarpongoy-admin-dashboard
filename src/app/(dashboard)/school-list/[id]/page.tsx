@@ -121,14 +121,6 @@ const formatCurrency = (value?: number) =>
     minimumFractionDigits: 0,
   }).format(Number(value || 0))
 
-const isUrl = (value?: string) => Boolean(value && /^(https?:|blob:|data:)\S+/i.test(value.trim()))
-
-const getNdaLabel = (nda?: string) => {
-  if (!nda?.trim()) return 'No school contract added.'
-  if (isUrl(nda)) return 'View School Contract'
-  return 'School contract on file'
-}
-
 const formatDate = (value?: string) => {
   if (!value) return 'Not set'
   const date = new Date(value)
@@ -144,7 +136,7 @@ const formatPlan = (plan?: string) => {
   if (plan === 'first_term') return 'First Term'
   if (plan === 'second_term') return 'Second Term'
   if (plan === 'third_term') return 'Third Term'
-  if (plan === 'full_year') return 'Full Year'
+  if (plan === 'full_year') return 'Full Term'
   return 'N/A'
 }
 

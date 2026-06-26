@@ -19,7 +19,7 @@ export default function SchoolTable({ schools, loading = false }: SchoolTablePro
   return (
     <section className="rounded-2xl bg-white p-6 shadow-sm">
       <h2 className="mb-4 text-[18px] font-semibold text-[#0A0A0B]">
-        School Lists
+        School List
       </h2>
 
       <div className="overflow-x-auto">
