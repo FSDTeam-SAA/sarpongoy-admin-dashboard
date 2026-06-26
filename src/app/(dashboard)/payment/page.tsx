@@ -51,8 +51,18 @@ type SchoolPaymentStatus = {
   schoolName?: string
   totalStudents?: number
   perStudentCharge?: number
-  activeTerm?: 'first_term' | 'second_term' | 'third_term' | 'full_payment' | 'none'
-  overdueTerm?: 'first_term' | 'second_term' | 'third_term' | 'full_payment' | 'none'
+  activeTerm?:
+    | 'first_term'
+    | 'second_term'
+    | 'third_term'
+    | 'full_payment'
+    | 'none'
+  overdueTerm?:
+    | 'first_term'
+    | 'second_term'
+    | 'third_term'
+    | 'full_payment'
+    | 'none'
   isRestricted?: boolean
   reason?: string
   paymentAccessStatus?: 'active' | 'restricted'
@@ -110,7 +120,10 @@ const getSchoolId = (payment: PaymentItem) => {
 }
 
 const getTotalStudents = (school?: SchoolDetails) =>
-  (school?.school || []).reduce((total, item) => total + Number(item.totalStudent || 0), 0)
+  (school?.school || []).reduce(
+    (total, item) => total + Number(item.totalStudent || 0),
+    0,
+  )
 
 const getSchoolName = (payment: PaymentItem) => {
   if (payment.schoolId && typeof payment.schoolId !== 'string') {
@@ -156,8 +169,14 @@ export default function PaymentPage() {
   const accessToken = user?.accessToken
 
   const [payments, setPayments] = useState<PaymentItem[]>([])
-  const [schoolStatuses, setSchoolStatuses] = useState<SchoolPaymentStatus[]>([])
-  const [meta, setMeta] = useState<PaginationMeta>({ page: 1, limit: 10, total: 0 })
+  const [schoolStatuses, setSchoolStatuses] = useState<SchoolPaymentStatus[]>(
+    [],
+  )
+  const [meta, setMeta] = useState<PaginationMeta>({
+    page: 1,
+    limit: 10,
+    total: 0,
+  })
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [approvingId, setApprovingId] = useState('')
@@ -165,7 +184,9 @@ export default function PaymentPage() {
   const [updatingStatusId, setUpdatingStatusId] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
   const [activeView, setActiveView] = useState<'status' | 'payments'>('status')
-  const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(null)
+  const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(
+    null,
+  )
 
   useEffect(() => {
     if (!accessToken) return
@@ -184,12 +205,15 @@ export default function PaymentPage() {
           params.set('searchTerm', search.trim())
         }
 
-        const response = await fetch(`${baseUrl}/payment?${params.toString()}`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
+        const response = await fetch(
+          `${baseUrl}/payment?${params.toString()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: controller.signal,
           },
-          signal: controller.signal,
-        })
+        )
 
         const result = (await response.json()) as {
           data?: PaymentItem[]
@@ -212,7 +236,9 @@ export default function PaymentPage() {
           message?: string
         }
         if (!statusResponse.ok) {
-          throw new Error(statusResult.message || 'Failed to load school payment statuses')
+          throw new Error(
+            statusResult.message || 'Failed to load school payment statuses',
+          )
         }
 
         const basePayments = (result.data || []).map(payment => ({
@@ -221,18 +247,23 @@ export default function PaymentPage() {
         }))
 
         const schoolIds = Array.from(
-          new Set(basePayments.map(payment => getSchoolId(payment)).filter(Boolean)),
+          new Set(
+            basePayments.map(payment => getSchoolId(payment)).filter(Boolean),
+          ),
         )
 
         const schoolEntries = await Promise.all(
           schoolIds.map(async schoolId => {
             try {
-              const schoolResponse = await fetch(`${baseUrl}/school/${schoolId}`, {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
+              const schoolResponse = await fetch(
+                `${baseUrl}/school/${schoolId}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                  },
+                  signal: controller.signal,
                 },
-                signal: controller.signal,
-              })
+              )
 
               const schoolResult = (await schoolResponse.json()) as {
                 data?: SchoolDetails
@@ -250,7 +281,10 @@ export default function PaymentPage() {
         )
 
         const schoolMap = new Map<string, SchoolDetails>(
-          schoolEntries.filter((entry): entry is readonly [string, SchoolDetails] => Boolean(entry)),
+          schoolEntries.filter(
+            (entry): entry is readonly [string, SchoolDetails] =>
+              Boolean(entry),
+          ),
         )
 
         const normalizedPayments = basePayments.map(payment => {
@@ -271,7 +305,9 @@ export default function PaymentPage() {
         setMeta(result.meta || { page: 1, limit: 10, total: 0 })
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
-          toast.error(error instanceof Error ? error.message : 'Failed to load payments')
+          toast.error(
+            error instanceof Error ? error.message : 'Failed to load payments',
+          )
         }
       } finally {
         setLoading(false)
@@ -295,12 +331,15 @@ export default function PaymentPage() {
 
     try {
       setApprovingId(paymentId)
-      const response = await fetch(`${baseUrl}/payment/${paymentId}/approve-offline`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
+      const response = await fetch(
+        `${baseUrl}/payment/${paymentId}/approve-offline`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         },
-      })
+      )
 
       const result = (await response.json()) as { message?: string }
       if (!response.ok) {
@@ -311,13 +350,20 @@ export default function PaymentPage() {
       setSelectedPayment(null)
       fetchPaymentsPage()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to approve offline payment')
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to approve offline payment',
+      )
     } finally {
       setApprovingId('')
     }
   }
 
-  const handleManualStatusUpdate = async (paymentId: string, status: string) => {
+  const handleManualStatusUpdate = async (
+    paymentId: string,
+    status: string,
+  ) => {
     if (!accessToken || !paymentId || !status) return
 
     try {
@@ -339,7 +385,11 @@ export default function PaymentPage() {
       toast.success('Payment status updated.')
       fetchPaymentsPage()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update payment status')
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to update payment status',
+      )
     } finally {
       setUpdatingStatusId('')
     }
@@ -357,7 +407,9 @@ export default function PaymentPage() {
       })
 
       if (!response.ok) {
-        const result = (await response.json().catch(() => null)) as { message?: string } | null
+        const result = (await response.json().catch(() => null)) as {
+          message?: string
+        } | null
         throw new Error(result?.message || 'Failed to download invoice')
       }
 
@@ -371,7 +423,9 @@ export default function PaymentPage() {
       link.remove()
       window.URL.revokeObjectURL(url)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to download invoice')
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to download invoice',
+      )
     } finally {
       setInvoiceDownloadingId('')
     }
@@ -392,7 +446,8 @@ export default function PaymentPage() {
   const overdueCount = schoolStatuses.filter(item => item.isRestricted).length
   const activeCount = schoolStatuses.filter(item => !item.isRestricted).length
   const pendingPayments = payments.filter(
-    payment => payment.status === 'pending' || payment.status === 'offline_pending',
+    payment =>
+      payment.status === 'pending' || payment.status === 'offline_pending',
   ).length
   const totalCollected = payments
     .filter(payment => payment.status === 'completed')
@@ -405,9 +460,12 @@ export default function PaymentPage() {
           <p className="text-[13px] font-semibold uppercase tracking-[0.16em] text-[#608BB9]">
             Billing Control
           </p>
-          <h1 className="mt-1 text-[28px] font-semibold text-[#0A0A0B]">Payment</h1>
+          <h1 className="mt-1 text-[28px] font-semibold text-[#0A0A0B]">
+            Payment
+          </h1>
           <p className="mt-1 text-[14px] text-[#64748B]">
-            Track school access, approve offline payments, and review subscription activity.
+            Track school access, approve offline payments, and review
+            subscription activity.
           </p>
         </div>
 
@@ -429,29 +487,47 @@ export default function PaymentPage() {
       <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg border border-[#DDEAF3] bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <p className="text-[13px] font-medium text-[#64748B]">Restricted schools</p>
+            <p className="text-[13px] font-medium text-[#64748B]">
+              Restricted schools
+            </p>
             <AlertTriangle className="size-4 text-[#D92D20]" />
           </div>
-          <p className="mt-3 text-[28px] font-semibold text-[#0A0A0B]">{overdueCount}</p>
-          <p className="mt-1 text-[12px] text-[#94A3B8]">Need payment or due-date review</p>
+          <p className="mt-3 text-[28px] font-semibold text-[#0A0A0B]">
+            {overdueCount}
+          </p>
+          <p className="mt-1 text-[12px] text-[#94A3B8]">
+            Need payment or due-date review
+          </p>
         </div>
 
         <div className="rounded-lg border border-[#DDEAF3] bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <p className="text-[13px] font-medium text-[#64748B]">Active schools</p>
+            <p className="text-[13px] font-medium text-[#64748B]">
+              Active schools
+            </p>
             <ShieldCheck className="size-4 text-[#2F9E44]" />
           </div>
-          <p className="mt-3 text-[28px] font-semibold text-[#0A0A0B]">{activeCount}</p>
-          <p className="mt-1 text-[12px] text-[#94A3B8]">Access currently open</p>
+          <p className="mt-3 text-[28px] font-semibold text-[#0A0A0B]">
+            {activeCount}
+          </p>
+          <p className="mt-1 text-[12px] text-[#94A3B8]">
+            Access currently open
+          </p>
         </div>
 
         <div className="rounded-lg border border-[#DDEAF3] bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <p className="text-[13px] font-medium text-[#64748B]">Pending payments</p>
+            <p className="text-[13px] font-medium text-[#64748B]">
+              Pending payments
+            </p>
             <Clock3 className="size-4 text-[#E67700]" />
           </div>
-          <p className="mt-3 text-[28px] font-semibold text-[#0A0A0B]">{pendingPayments}</p>
-          <p className="mt-1 text-[12px] text-[#94A3B8]">Stripe or offline waiting</p>
+          <p className="mt-3 text-[28px] font-semibold text-[#0A0A0B]">
+            {pendingPayments}
+          </p>
+          <p className="mt-1 text-[12px] text-[#94A3B8]">
+            Stripe or offline waiting
+          </p>
         </div>
 
         <div className="rounded-lg border border-[#DDEAF3] bg-white p-4 shadow-sm">
@@ -459,8 +535,12 @@ export default function PaymentPage() {
             <p className="text-[13px] font-medium text-[#64748B]">Collected</p>
             <WalletCards className="size-4 text-[#0B5280]" />
           </div>
-          <p className="mt-3 text-[28px] font-semibold text-[#0A0A0B]">{formatCurrency(totalCollected)}</p>
-          <p className="mt-1 text-[12px] text-[#94A3B8]">Current filtered page</p>
+          <p className="mt-3 text-[28px] font-semibold text-[#0A0A0B]">
+            {formatCurrency(totalCollected)}
+          </p>
+          <p className="mt-1 text-[12px] text-[#94A3B8]">
+            Current filtered page
+          </p>
         </div>
       </div>
 
@@ -505,12 +585,24 @@ export default function PaymentPage() {
             <table className="w-full min-w-[940px] border-collapse">
               <thead className="bg-[#F8FAFC]">
                 <tr className="border-b border-[#E5E7EB]">
-                  <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">School</th>
-                  <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">Current term</th>
-                  <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">Access</th>
-                  <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">Latest payment</th>
-                  <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">Manual status</th>
-                  <th className="px-5 py-4 text-right text-[13px] font-bold text-[#64748B]">Details</th>
+                  <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">
+                    School
+                  </th>
+                  <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">
+                    Current term
+                  </th>
+                  <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">
+                    Access
+                  </th>
+                  <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">
+                    Latest payment
+                  </th>
+                  <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">
+                    Manual status
+                  </th>
+                  <th className="px-5 py-4 text-right text-[13px] font-bold text-[#64748B]">
+                    Details
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -522,18 +614,29 @@ export default function PaymentPage() {
                   </tr>
                 ) : schoolStatuses.length ? (
                   schoolStatuses.map(item => (
-                    <tr key={item.schoolId} className="border-b border-[#E5E7EB] last:border-0">
+                    <tr
+                      key={item.schoolId}
+                      className="border-b border-[#E5E7EB] last:border-0"
+                    >
                       <td className="px-5 py-4">
-                        <p className="text-[14px] font-semibold text-[#0A0A0B]">{item.schoolName || 'N/A'}</p>
+                        <p className="text-[14px] font-semibold text-[#0A0A0B]">
+                          {item.schoolName || 'N/A'}
+                        </p>
                         <p className="mt-1 max-w-[280px] truncate text-[12px] text-[#64748B]">
                           {item.reason || 'No status note'}
                         </p>
                       </td>
-                      <td className="px-5 py-4 text-[14px] text-[#0A0A0B]">{formatTerm(item.activeTerm)}</td>
+                      <td className="px-5 py-4 text-[14px] text-[#0A0A0B]">
+                        {formatTerm(item.activeTerm)}
+                      </td>
                       <td className="px-5 py-4">
-                        <span className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold capitalize ${
-                          item.isRestricted ? 'bg-[#FDE2E2] text-[#D92D20]' : 'bg-[#D9FBE2] text-[#2F9E44]'
-                        }`}>
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold capitalize ${
+                            item.isRestricted
+                              ? 'bg-[#FDE2E2] text-[#D92D20]'
+                              : 'bg-[#D9FBE2] text-[#2F9E44]'
+                          }`}
+                        >
                           {item.paymentAccessStatus || 'active'}
                         </span>
                       </td>
@@ -546,20 +649,29 @@ export default function PaymentPage() {
                         {item.latestPayment?.id ? (
                           <select
                             value={item.latestPayment.status || ''}
-                            disabled={updatingStatusId === item.latestPayment.id}
+                            disabled={
+                              updatingStatusId === item.latestPayment.id
+                            }
                             onChange={event =>
-                              handleManualStatusUpdate(item.latestPayment!.id, event.target.value)
+                              handleManualStatusUpdate(
+                                item.latestPayment!.id,
+                                event.target.value,
+                              )
                             }
                             className="h-10 rounded-md border border-[#CBD5E1] bg-white px-3 text-[13px] outline-none transition focus:border-[#0B5280]"
                           >
                             <option value="pending">Pending</option>
-                            <option value="offline_pending">Offline Pending</option>
+                            <option value="offline_pending">
+                              Offline Pending
+                            </option>
                             <option value="completed">Completed</option>
                             <option value="failed">Failed</option>
                             <option value="refunded">Refunded</option>
                           </select>
                         ) : (
-                          <span className="text-[13px] text-[#94A3B8]">No payment</span>
+                          <span className="text-[13px] text-[#94A3B8]">
+                            No payment
+                          </span>
                         )}
                       </td>
                       <td className="px-5 py-4 text-right">
@@ -575,7 +687,10 @@ export default function PaymentPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-[14px] text-[#64748B]">
+                    <td
+                      colSpan={6}
+                      className="px-5 py-10 text-center text-[14px] text-[#64748B]"
+                    >
                       No school payment statuses found.
                     </td>
                   </tr>
@@ -589,14 +704,30 @@ export default function PaymentPage() {
               <table className="w-full min-w-[1040px] border-collapse">
                 <thead className="bg-[#F8FAFC]">
                   <tr className="border-b border-[#E5E7EB]">
-                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">School</th>
-                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">Billing email</th>
-                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">Plan</th>
-                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">Method</th>
-                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">Students</th>
-                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">Amount</th>
-                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">Status</th>
-                    <th className="px-5 py-4 text-right text-[13px] font-bold text-[#64748B]">Action</th>
+                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">
+                      School
+                    </th>
+                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">
+                      Billing email
+                    </th>
+                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">
+                      Plan
+                    </th>
+                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">
+                      Method
+                    </th>
+                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">
+                      Students
+                    </th>
+                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">
+                      Amount
+                    </th>
+                    <th className="px-5 py-4 text-left text-[13px] font-bold text-[#64748B]">
+                      Status
+                    </th>
+                    <th className="px-5 py-4 text-right text-[13px] font-bold text-[#64748B]">
+                      Action
+                    </th>
                   </tr>
                 </thead>
 
@@ -609,16 +740,27 @@ export default function PaymentPage() {
                     </tr>
                   ) : payments.length ? (
                     payments.map(payment => (
-                      <tr key={payment._id} className="border-b border-[#E5E7EB] last:border-0">
+                      <tr
+                        key={payment._id}
+                        className="border-b border-[#E5E7EB] last:border-0"
+                      >
                         <td className="px-5 py-4">
-                          <p className="text-[14px] font-semibold text-[#0A0A0B]">{formatSchoolName(payment.schoolName)}</p>
+                          <p className="text-[14px] font-semibold text-[#0A0A0B]">
+                            {formatSchoolName(payment.schoolName)}
+                          </p>
                         </td>
-                        <td className="px-5 py-4 text-[14px] text-[#0A0A0B]">{payment.email || 'N/A'}</td>
-                        <td className="px-5 py-4 text-[14px] text-[#0A0A0B]">{formatPlan(payment.paymentPlan)}</td>
+                        <td className="px-5 py-4 text-[14px] text-[#0A0A0B]">
+                          {payment.email || 'N/A'}
+                        </td>
+                        <td className="px-5 py-4 text-[14px] text-[#0A0A0B]">
+                          {formatPlan(payment.paymentPlan)}
+                        </td>
                         <td className="px-5 py-4 text-[14px] capitalize text-[#0A0A0B]">
                           {payment.paymentMethod || 'stripe'}
                         </td>
-                        <td className="px-5 py-4 text-[14px] text-[#0A0A0B]">{payment.totalStudents ?? 'N/A'}</td>
+                        <td className="px-5 py-4 text-[14px] text-[#0A0A0B]">
+                          {payment.totalStudents ?? 'N/A'}
+                        </td>
                         <td className="px-5 py-4 text-[14px] font-semibold text-[#0A0A0B]">
                           {formatCurrency(payment.amount)}
                         </td>
@@ -645,7 +787,9 @@ export default function PaymentPage() {
                             {payment.status === 'completed' ? (
                               <button
                                 type="button"
-                                onClick={() => handleDownloadInvoice(payment._id)}
+                                onClick={() =>
+                                  handleDownloadInvoice(payment._id)
+                                }
                                 disabled={invoiceDownloadingId === payment._id}
                                 className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[#CBD5E1] px-3 text-[13px] font-semibold text-[#0B5280] transition hover:border-[#0B5280] hover:bg-[#F0F7FF] disabled:opacity-60"
                               >
@@ -657,7 +801,9 @@ export default function PaymentPage() {
                             {payment.status === 'offline_pending' ? (
                               <button
                                 type="button"
-                                onClick={() => handleApproveOffline(payment._id)}
+                                onClick={() =>
+                                  handleApproveOffline(payment._id)
+                                }
                                 disabled={approvingId === payment._id}
                                 className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-[#0B5280] px-3 text-[13px] font-semibold text-white transition hover:bg-[#094570] disabled:opacity-60"
                               >
@@ -675,7 +821,10 @@ export default function PaymentPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="px-5 py-10 text-center text-[14px] text-[#64748B]">
+                      <td
+                        colSpan={8}
+                        className="px-5 py-10 text-center text-[14px] text-[#64748B]"
+                      >
                         No payment records found.
                       </td>
                     </tr>
@@ -686,13 +835,19 @@ export default function PaymentPage() {
 
             <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#E5E7EB] px-5 py-4">
               <p className="text-[14px] font-normal text-[#64748B]">
-                Showing {payments.length ? (meta.page - 1) * meta.limit + 1 : 0} to {Math.min(meta.page * meta.limit, meta.total)} of{' '}
+                Showing {payments.length ? (meta.page - 1) * meta.limit + 1 : 0}{' '}
+                to {Math.min(meta.page * meta.limit, meta.total)} of{' '}
                 {meta.total} results
               </p>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setMeta(current => ({ ...current, page: Math.max(1, current.page - 1) }))}
+                  onClick={() =>
+                    setMeta(current => ({
+                      ...current,
+                      page: Math.max(1, current.page - 1),
+                    }))
+                  }
                   disabled={meta.page === 1}
                   className="flex h-8 w-8 items-center justify-center rounded border border-[#94A3B8] text-[#64748B] disabled:opacity-40"
                 >
@@ -708,7 +863,12 @@ export default function PaymentPage() {
 
                 <button
                   type="button"
-                  onClick={() => setMeta(current => ({ ...current, page: Math.min(totalPages, current.page + 1) }))}
+                  onClick={() =>
+                    setMeta(current => ({
+                      ...current,
+                      page: Math.min(totalPages, current.page + 1),
+                    }))
+                  }
                   disabled={meta.page >= totalPages}
                   className="flex h-8 w-8 items-center justify-center rounded border border-[#94A3B8] text-[#334155] disabled:opacity-40"
                 >
@@ -748,48 +908,77 @@ export default function PaymentPage() {
             <div className="max-h-[70vh] overflow-y-auto px-6 py-5">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-md border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
-                  <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">Plan</p>
-                  <p className="mt-1 text-[15px] font-semibold text-[#0A0A0B]">{formatPlan(selectedPayment.paymentPlan)}</p>
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">
+                    Plan
+                  </p>
+                  <p className="mt-1 text-[15px] font-semibold text-[#0A0A0B]">
+                    {formatPlan(selectedPayment.paymentPlan)}
+                  </p>
                 </div>
                 <div className="rounded-md border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
-                  <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">Method</p>
-                  <p className="mt-1 text-[15px] font-semibold capitalize text-[#0A0A0B]">{selectedPayment.paymentMethod || 'stripe'}</p>
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">
+                    Method
+                  </p>
+                  <p className="mt-1 text-[15px] font-semibold capitalize text-[#0A0A0B]">
+                    {selectedPayment.paymentMethod || 'stripe'}
+                  </p>
                 </div>
                 <div className="rounded-md border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
-                  <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">Status</p>
-                  <span className={`mt-2 inline-flex rounded-full px-3 py-1 text-[12px] font-semibold capitalize ${renderStatus(selectedPayment.status)}`}>
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">
+                    Status
+                  </p>
+                  <span
+                    className={`mt-2 inline-flex rounded-full px-3 py-1 text-[12px] font-semibold capitalize ${renderStatus(selectedPayment.status)}`}
+                  >
                     {formatStatus(selectedPayment.status)}
                   </span>
                 </div>
                 <div className="rounded-md border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
-                  <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">Submitted</p>
-                  <p className="mt-1 text-[15px] font-semibold text-[#0A0A0B]">{formatDate(selectedPayment.createdAt)}</p>
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">
+                    Submitted
+                  </p>
+                  <p className="mt-1 text-[15px] font-semibold text-[#0A0A0B]">
+                    {formatDate(selectedPayment.createdAt)}
+                  </p>
                 </div>
               </div>
 
               <div className="mt-4 overflow-hidden rounded-md border border-[#E2E8F0]">
                 <div className="flex items-center justify-between gap-4 border-b border-[#E2E8F0] px-4 py-3 text-[14px]">
                   <span className="text-[#64748B]">Students</span>
-                  <strong className="text-[#0A0A0B]">{selectedPayment.totalStudents ?? 'N/A'}</strong>
+                  <strong className="text-[#0A0A0B]">
+                    {selectedPayment.totalStudents ?? 'N/A'}
+                  </strong>
                 </div>
                 <div className="flex items-center justify-between gap-4 border-b border-[#E2E8F0] px-4 py-3 text-[14px]">
                   <span className="text-[#64748B]">Per-student charge</span>
-                  <strong className="text-[#0A0A0B]">{formatCurrency(selectedPayment.perStudentCharge)}</strong>
+                  <strong className="text-[#0A0A0B]">
+                    {formatCurrency(selectedPayment.perStudentCharge)}
+                  </strong>
                 </div>
                 <div className="flex items-center justify-between gap-4 border-b border-[#E2E8F0] px-4 py-3 text-[14px]">
                   <span className="text-[#64748B]">Calculated total</span>
-                  <strong className="text-[#0A0A0B]">{formatCurrency(selectedPayment.totalAmount)}</strong>
+                  <strong className="text-[#0A0A0B]">
+                    {formatCurrency(selectedPayment.totalAmount)}
+                  </strong>
                 </div>
                 <div className="flex items-center justify-between gap-4 bg-[#EEF6FB] px-4 py-3 text-[15px]">
-                  <span className="font-semibold text-[#063D5B]">Payment amount</span>
-                  <strong className="text-[#063D5B]">{formatCurrency(selectedPayment.amount)}</strong>
+                  <span className="font-semibold text-[#063D5B]">
+                    Payment amount
+                  </span>
+                  <strong className="text-[#063D5B]">
+                    {formatCurrency(selectedPayment.amount)}
+                  </strong>
                 </div>
               </div>
 
               <div className="mt-4 rounded-md border border-[#E2E8F0] px-4 py-3">
-                <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">Offline note</p>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#64748B]">
+                  Offline note
+                </p>
                 <p className="mt-2 whitespace-pre-wrap text-[14px] leading-6 text-[#0A0A0B]">
-                  {selectedPayment.offlinePaymentNote?.trim() || 'No note submitted.'}
+                  {selectedPayment.offlinePaymentNote?.trim() ||
+                    'No note submitted.'}
                 </p>
               </div>
             </div>
@@ -810,7 +999,9 @@ export default function PaymentPage() {
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[#0B5280] px-4 text-[14px] font-semibold text-[#0B5280] transition hover:bg-[#F0F7FF] disabled:opacity-60"
                 >
                   <Download className="size-4" />
-                  {invoiceDownloadingId === selectedPayment._id ? 'Downloading...' : 'Download Invoice'}
+                  {invoiceDownloadingId === selectedPayment._id
+                    ? 'Downloading...'
+                    : 'Download Invoice'}
                 </button>
               ) : null}
               {selectedPayment.status === 'offline_pending' ? (
