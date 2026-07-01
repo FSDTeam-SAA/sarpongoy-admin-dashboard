@@ -45,7 +45,7 @@ export function Sidebar() {
   return (
     <>
       <aside
-        className="sticky top-0 flex h-screen w-[330px] shrink-0 flex-col px-6 py-0"
+        className="sticky top-0 hidden h-screen w-[330px] shrink-0 flex-col px-6 py-0 lg:flex"
         style={{
           background: 'linear-gradient(180deg, #C3E1FF 0%, #608BB9 100%)',
         }}

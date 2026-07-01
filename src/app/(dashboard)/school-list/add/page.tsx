@@ -1,7 +1,7 @@
 'use client'
 
 import { Loader2, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
@@ -12,6 +12,16 @@ type SessionUser = {
 
 const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL
 
+const splitAmount = (total: number, count: number) => {
+  const cents = Math.round(total * 100)
+  const base = Math.floor(cents / count)
+  const remainder = cents - base * count
+
+  return Array.from({ length: count }, (_, index) =>
+    ((base + (index < remainder ? 1 : 0)) / 100).toFixed(2),
+  )
+}
+
 export default function AddSchoolPage() {
   const router = useRouter()
   const { data: session } = useSession()
@@ -20,14 +30,63 @@ export default function AddSchoolPage() {
 
   const [schoolName, setSchoolName] = useState('')
   const [subscribePrice, setSubscribePrice] = useState('')
+  const [totalStudent, setTotalStudent] = useState('')
   const [ndaFile, setNdaFile] = useState<File | null>(null)
-  const [termDates, setTermDates] = useState({
-    firstTermDueDate: '',
-    secondTermDueDate: '',
-    thirdTermDueDate: '',
-    fullPaymentDueDate: '',
-  })
+  const [paymentTerms, setPaymentTerms] = useState([
+    { termId: 'term_1', label: 'Term 1', amount: '', dueDate: '' },
+    { termId: 'term_2', label: 'Term 2', amount: '', dueDate: '' },
+    { termId: 'term_3', label: 'Term 3', amount: '', dueDate: '' },
+  ])
   const [saving, setSaving] = useState(false)
+  const totalContractAmount =
+    Number(subscribePrice || 0) * Number(totalStudent || 0)
+  const termTotal = paymentTerms.reduce(
+    (sum, term) => sum + Number(term.amount || 0),
+    0,
+  )
+  const termDelta = Number((totalContractAmount - termTotal).toFixed(2))
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(amount || 0)
+
+  const setTermCount = (count: number) => {
+    const safeCount = Math.max(1, count)
+    setPaymentTerms(current =>
+      Array.from({ length: safeCount }, (_, index) => {
+        const existing = current[index]
+        return (
+          existing || {
+            termId: `term_${index + 1}`,
+            label: `Term ${index + 1}`,
+            amount: '',
+            dueDate: '',
+          }
+        )
+      }),
+    )
+  }
+
+  const prevTotalContractRef = useRef(0)
+
+  useEffect(() => {
+    if (totalContractAmount <= 0) return
+
+    const isEmpty = paymentTerms.every(term => !term.amount)
+    if (totalContractAmount !== prevTotalContractRef.current || isEmpty) {
+      prevTotalContractRef.current = totalContractAmount
+      const amounts = splitAmount(totalContractAmount, paymentTerms.length)
+      setPaymentTerms(current =>
+        current.map((term, index) => ({
+          ...term,
+          amount: amounts[index] || '',
+        })),
+      )
+    }
+  }, [paymentTerms, totalContractAmount])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -37,23 +96,42 @@ export default function AddSchoolPage() {
       toast.error('Please enter school name')
       return
     }
+    if (Number(subscribePrice || 0) <= 0 || Number(totalStudent || 0) <= 0) {
+      toast.error('Per-student charge and total population are required')
+      return
+    }
+    if (Math.round(termDelta * 100) !== 0) {
+      toast.error(`Term total mismatch: ${formatCurrency(termDelta)} remaining`)
+      return
+    }
 
     try {
       setSaving(true)
       const formData = new FormData()
       formData.append('name', schoolName.trim())
-
-      if (subscribePrice.trim()) {
-        formData.append('subscribePrice', subscribePrice)
-      }
+      formData.append('subscribePrice', subscribePrice)
+      formData.append('totalStudent', totalStudent)
+      formData.append(
+        'paymentTerms',
+        JSON.stringify(
+          paymentTerms.map((term, index) => ({
+            termId: term.termId || `term_${index + 1}`,
+            label: term.label || `Term ${index + 1}`,
+            amount: Number(term.amount || 0),
+            dueDate: term.dueDate || undefined,
+          })),
+        ),
+      )
+      paymentTerms.forEach((term, index) => {
+        if (!term.dueDate) return
+        if (index === 0) formData.append('firstTermDueDate', term.dueDate)
+        if (index === 1) formData.append('secondTermDueDate', term.dueDate)
+        if (index === 2) formData.append('thirdTermDueDate', term.dueDate)
+      })
 
       if (ndaFile) {
         formData.append('NDA', ndaFile)
       }
-
-      Object.entries(termDates).forEach(([key, value]) => {
-        if (value) formData.append(key, value)
-      })
 
       const response = await fetch(`${baseUrl}/school`, {
         method: 'POST',
@@ -88,12 +166,12 @@ export default function AddSchoolPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-6rem)] bg-[#ECF7FD] px-8 py-10">
-      <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center">
-        <section className="w-full max-w-[860px] rounded-lg bg-white px-14 py-16 shadow-sm">
+    <div className="min-h-[calc(100vh-5rem)] bg-[#ECF7FD] px-4 py-6 sm:px-6 lg:min-h-[calc(100vh-6rem)] lg:px-8 lg:py-10">
+      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center lg:min-h-[calc(100vh-10rem)]">
+        <section className="w-full max-w-[980px] rounded-lg bg-white px-4 py-8 shadow-sm sm:px-8 lg:px-14 lg:py-14">
           <h1 className="text-center text-[24px] font-semibold text-[#5A5A5A]">Add School</h1>
 
-          <form onSubmit={handleSubmit} className="mx-auto mt-10 max-w-[620px]">
+          <form onSubmit={handleSubmit} className="mx-auto mt-8 w-full max-w-[760px] lg:mt-10">
             <div>
               <label htmlFor="schoolName" className="block text-[13px] font-medium text-[#5A5A5A]">
                 Enter School Name
@@ -111,7 +189,7 @@ export default function AddSchoolPage() {
 
             <div className="mt-6">
               <label htmlFor="subscribePrice" className="block text-[13px] font-medium text-[#5A5A5A]">
-                Per-student Charge (Optional)
+                Per-student Charge
               </label>
               <input
                 id="subscribePrice"
@@ -124,6 +202,32 @@ export default function AddSchoolPage() {
                 placeholder="Write here"
                 className="mt-2 h-11 w-full rounded-sm border border-[#D1D5DB] px-4 text-[14px] text-[#0A0A0B] outline-none transition focus:border-[#0B5280]"
               />
+            </div>
+
+            <div className="mt-6">
+              <label htmlFor="totalStudent" className="block text-[13px] font-medium text-[#5A5A5A]">
+                Total School Population
+              </label>
+              <input
+                id="totalStudent"
+                name="totalStudent"
+                type="number"
+                min="1"
+                step="1"
+                value={totalStudent}
+                onChange={event => setTotalStudent(event.target.value)}
+                placeholder="Write here"
+                className="mt-2 h-11 w-full rounded-sm border border-[#D1D5DB] px-4 text-[14px] text-[#0A0A0B] outline-none transition focus:border-[#0B5280]"
+              />
+            </div>
+
+            <div className="mt-6 rounded-sm border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3">
+              <p className="text-[13px] font-medium text-[#111827]">
+                Total Contract Amount
+              </p>
+              <p className="mt-1 text-[24px] font-semibold text-[#0B5280]">
+                {formatCurrency(totalContractAmount)}
+              </p>
             </div>
 
             <div className="mt-6">
@@ -147,33 +251,77 @@ export default function AddSchoolPage() {
             </div>
 
             <div className="mt-6 rounded-sm border border-[#E5E7EB] bg-[#F9FAFB] p-4">
-              <p className="text-[14px] font-semibold text-[#111827]">Term Due Dates</p>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                {[
-                  ['firstTermDueDate', 'First Term Due Date'],
-                  ['secondTermDueDate', 'Second Term Due Date'],
-                  ['thirdTermDueDate', 'Third Term Due Date'],
-                  ['fullPaymentDueDate', 'Full Payment Due Date'],
-                ].map(([key, label]) => (
-                  <div key={key}>
-                    <label htmlFor={key} className="block text-[13px] font-medium text-[#5A5A5A]">
-                      {label}
-                    </label>
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-[14px] font-semibold text-[#111827]">Payment Terms</p>
+                <input
+                  type="number"
+                  min="1"
+                  value={paymentTerms.length}
+                  onChange={event => setTermCount(Number(event.target.value || 1))}
+                  className="h-10 w-24 rounded-sm border border-[#D1D5DB] px-3 text-[14px] outline-none focus:border-[#0B5280]"
+                  aria-label="Number of terms"
+                />
+              </div>
+              <div className="mt-4 hidden grid-cols-[minmax(0,1fr)_minmax(0,1fr)_170px] gap-3 px-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#64748B] lg:grid">
+                <span>Term Name</span>
+                <span>Amount</span>
+                <span>Due Date</span>
+              </div>
+              <div className="mt-2 space-y-3">
+                {paymentTerms.map((term, index) => (
+                  <div key={term.termId} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_170px]">
                     <input
-                      id={key}
-                      type="date"
-                      value={termDates[key as keyof typeof termDates]}
+                      value={term.label}
+                      placeholder="Term name"
                       onChange={event =>
-                        setTermDates(current => ({
-                          ...current,
-                          [key]: event.target.value,
-                        }))
+                        setPaymentTerms(current =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, label: event.target.value }
+                              : item,
+                          ),
+                        )
                       }
-                      className="mt-2 h-11 w-full rounded-sm border border-[#D1D5DB] px-4 text-[14px] text-[#0A0A0B] outline-none transition focus:border-[#0B5280]"
+                      className="h-11 min-w-0 rounded-sm border border-[#D1D5DB] px-4 text-[14px] outline-none focus:border-[#0B5280]"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Amount"
+                      value={term.amount}
+                      onChange={event =>
+                        setPaymentTerms(current =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, amount: event.target.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      className="h-11 min-w-0 rounded-sm border border-[#D1D5DB] px-4 text-[14px] outline-none focus:border-[#0B5280]"
+                    />
+                    <input
+                      type="date"
+                      aria-label={`${term.label || `Term ${index + 1}`} due date`}
+                      value={term.dueDate}
+                      onChange={event =>
+                        setPaymentTerms(current =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, dueDate: event.target.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      className="h-11 min-w-0 rounded-sm border border-[#D1D5DB] px-3 text-[14px] outline-none focus:border-[#0B5280]"
                     />
                   </div>
                 ))}
               </div>
+              <p className={`mt-3 text-[13px] font-medium ${Math.round(termDelta * 100) === 0 ? 'text-[#166534]' : 'text-[#B45309]'}`}>
+                Terms total: {formatCurrency(termTotal)} · Difference: {formatCurrency(termDelta)}
+              </p>
             </div>
 
             <button

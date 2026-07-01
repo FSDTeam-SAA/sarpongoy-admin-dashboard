@@ -15,7 +15,7 @@ type UserItem = {
   email?: string
   totalStudent?: number
   status?: string
-  schoolName?: string | { name?: string }
+  schoolName?: string | { _id?: string; name?: string }
 }
 
 type PaymentItem = {
@@ -103,7 +103,7 @@ export default function DashboardPage() {
         setSchoolsLoading(true)
         setRevenueLoading(true)
 
-        const [schoolResponse, paymentResponse] = await Promise.all([
+        const [schoolResponse, paymentResponse, schoolModelResponse] = await Promise.all([
           fetch(
             `${baseUrl}/user?role=school&page=1&limit=5&sortBy=createdAt&sortOrder=desc`,
             {
@@ -115,6 +115,15 @@ export default function DashboardPage() {
           ),
           fetch(
             `${baseUrl}/payment?status=completed&paymentType=school&page=1&limit=500&sortBy=createdAt&sortOrder=desc`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+              signal: controller.signal,
+            },
+          ),
+          fetch(
+            `${baseUrl}/school?limit=500`,
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -134,6 +143,10 @@ export default function DashboardPage() {
           meta?: PaginationMeta
           message?: string
         }
+        const schoolModelResult = (await schoolModelResponse.json()) as {
+          data?: Array<{ _id: string; totalStudent?: number }>
+          message?: string
+        }
 
         if (!schoolResponse.ok) {
           throw new Error(schoolResult.message || 'Failed to load schools')
@@ -142,6 +155,15 @@ export default function DashboardPage() {
         if (!paymentResponse.ok) {
           throw new Error(paymentResult.message || 'Failed to load payments')
         }
+
+        // Build school model lookup for totalStudent
+        const schoolModelMap = (schoolModelResult.data || []).reduce<Record<string, number>>(
+          (acc, s) => {
+            if (s._id && s.totalStudent) acc[s._id] = Number(s.totalStudent)
+            return acc
+          },
+          {},
+        )
 
         const completedPayments = paymentResult.data || []
         const paymentTotalsByEmail = completedPayments.reduce<Record<string, number>>(
@@ -157,12 +179,13 @@ export default function DashboardPage() {
         const schoolRows = (schoolResult.data || []).map(userItem => {
           const email = userItem.email || ''
           const isActive = (userItem.status || 'active') === 'active'
+          const schoolNameId = typeof userItem.schoolName === 'string' ? userItem.schoolName : userItem.schoolName?._id || ''
 
           return {
             _id: userItem._id,
             name: formatSchoolName(userItem.schoolName),
             email,
-            totalStudents: Number(userItem.totalStudent || 0),
+            totalStudents: schoolModelMap[schoolNameId] || Number(userItem.totalStudent || 0),
             totalAmount: paymentTotalsByEmail[email] || 0,
             status: isActive ? 'active' : 'inactive',
           }

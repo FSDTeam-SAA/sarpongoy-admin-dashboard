@@ -183,7 +183,7 @@ export default function PaymentPage() {
   const [invoiceDownloadingId, setInvoiceDownloadingId] = useState('')
   const [updatingStatusId, setUpdatingStatusId] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
-  const [activeView, setActiveView] = useState<'status' | 'payments'>('status')
+  const [activeView, setActiveView] = useState<'payments' | 'status'>('payments')
   const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(
     null,
   )
@@ -549,18 +549,6 @@ export default function PaymentPage() {
           <div className="inline-flex w-full rounded-md border border-[#D1D5DB] bg-[#F8FAFC] p-1 lg:w-auto">
             <button
               type="button"
-              onClick={() => setActiveView('status')}
-              className={`flex h-10 flex-1 items-center justify-center gap-2 rounded px-4 text-[14px] font-semibold transition lg:flex-none ${
-                activeView === 'status'
-                  ? 'bg-[#0B5280] text-white shadow-sm'
-                  : 'text-[#475569] hover:bg-white'
-              }`}
-            >
-              <ShieldCheck className="size-4" />
-              School status
-            </button>
-            <button
-              type="button"
               onClick={() => setActiveView('payments')}
               className={`flex h-10 flex-1 items-center justify-center gap-2 rounded px-4 text-[14px] font-semibold transition lg:flex-none ${
                 activeView === 'payments'
@@ -570,6 +558,18 @@ export default function PaymentPage() {
             >
               <WalletCards className="size-4" />
               Payment records
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('status')}
+              className={`flex h-10 flex-1 items-center justify-center gap-2 rounded px-4 text-[14px] font-semibold transition lg:flex-none ${
+                activeView === 'status'
+                  ? 'bg-[#0B5280] text-white shadow-sm'
+                  : 'text-[#475569] hover:bg-white'
+              }`}
+            >
+              <ShieldCheck className="size-4" />
+              School status
             </button>
           </div>
 

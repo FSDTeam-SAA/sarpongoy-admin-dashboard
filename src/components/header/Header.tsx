@@ -84,7 +84,7 @@ export default function Header() {
 
   return (
     <header
-      className="fixed left-[330px] right-0 top-0 z-50 flex h-24 items-center justify-end px-8"
+      className="fixed left-0 right-0 top-0 z-50 flex h-20 items-center justify-end px-4 sm:px-6 lg:left-[330px] lg:h-24 lg:px-8"
       style={{
         background:
           "linear-gradient(270deg, #608BB9 5.34%, #B4D9FF 71.79%)",
@@ -92,7 +92,7 @@ export default function Header() {
     >
       <Link
         href="/settings"
-        className="flex items-center gap-3 rounded-full bg-white/10 px-3 py-2 transition hover:bg-white/20"
+        className="flex min-w-0 items-center gap-3 rounded-full bg-white/10 px-3 py-2 transition hover:bg-white/20"
       >
         {profileImage ? (
           <Image
@@ -108,7 +108,7 @@ export default function Header() {
             {(displayName[0] || "A").toUpperCase()}
           </div>
         )}
-        <span className="text-[17px] font-medium text-white">
+        <span className="max-w-[160px] truncate text-[15px] font-medium text-white sm:max-w-[240px] sm:text-[17px]">
           {displayName}
         </span>
       </Link>
