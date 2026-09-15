@@ -196,7 +196,7 @@ export default function AddSchoolPage() {
                 name="subscribePrice"
                 type="number"
                 min="0"
-                step="1"
+                step="0.01"
                 value={subscribePrice}
                 onChange={event => setSubscribePrice(event.target.value)}
                 placeholder="Write here"
