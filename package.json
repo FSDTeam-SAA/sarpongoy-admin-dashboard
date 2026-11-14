@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node init && next dev --turbopack",
-    "build": "node init && CI=1 next build",
+    "build": "node init && next build",
     "start": "node init && next start",
     "lint": "eslint"
   },

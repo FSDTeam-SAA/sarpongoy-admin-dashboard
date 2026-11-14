@@ -18,6 +18,7 @@ type SchoolDetails = {
   totalStudent?: number
   totalContractAmount?: number
   termsLocked?: boolean
+  lockedTermIds?: string[]
   NDA?: string
   paymentTerms?: Array<{
     termId?: string
@@ -396,7 +397,7 @@ export default function EditSchoolPage() {
                   </div>
                   {termsLocked ? (
                     <span className="rounded-full bg-[#FEF3C7] px-3 py-1 text-[12px] font-semibold text-[#92400E]">
-                      Locked - payments already in progress
+                      All payment terms are paid or awaiting approval
                     </span>
                   ) : null}
                 </div>
@@ -451,7 +452,7 @@ export default function EditSchoolPage() {
                     type="number"
                     min="1"
                     value={paymentTerms.length}
-                    disabled={termsLocked}
+                    disabled={termsLocked || Boolean(school?.lockedTermIds?.length)}
                     onChange={event => setTermCount(Number(event.target.value || 1))}
                     className="h-10 w-24 rounded-sm border border-[#D1D5DB] px-3 text-[14px] outline-none focus:border-[#0B5280] disabled:bg-[#F3F4F6]"
                     aria-label="Number of terms"
@@ -468,7 +469,7 @@ export default function EditSchoolPage() {
                       <input
                         value={term.label}
                         placeholder="Term name"
-                        disabled={termsLocked}
+                        disabled={termsLocked || Boolean(school?.lockedTermIds?.includes(term.termId))}
                         onChange={event =>
                           setPaymentTerms(current =>
                             current.map((item, itemIndex) =>
@@ -484,7 +485,7 @@ export default function EditSchoolPage() {
                         step="0.01"
                         placeholder="Amount"
                         value={term.amount}
-                        disabled={termsLocked}
+                        disabled={termsLocked || Boolean(school?.lockedTermIds?.includes(term.termId))}
                         onChange={event =>
                           setPaymentTerms(current =>
                             current.map((item, itemIndex) =>
@@ -498,7 +499,7 @@ export default function EditSchoolPage() {
                         type="date"
                         aria-label={`${term.label || `Term ${index + 1}`} due date`}
                         value={term.dueDate}
-                        disabled={termsLocked}
+                        disabled={termsLocked || Boolean(school?.lockedTermIds?.includes(term.termId))}
                         onChange={event =>
                           setPaymentTerms(current =>
                             current.map((item, itemIndex) =>
